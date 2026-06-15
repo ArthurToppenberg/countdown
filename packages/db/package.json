@@ -11,7 +11,7 @@
     "clean": "rimraf dist src/generated",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma db seed",
     "db:seed": "prisma db seed"
   },
   "devDependencies": {
