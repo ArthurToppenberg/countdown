@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDaysIcon,
   HomeIcon,
-  LayoutDashboardIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -25,15 +24,10 @@ import {
 type AdminNavItem = {
   title: string;
   href: string;
-  icon: typeof LayoutDashboardIcon;
+  icon: typeof CalendarDaysIcon;
 };
 
 const adminNavItems: AdminNavItem[] = [
-  {
-    title: "Overblik",
-    href: "/admin",
-    icon: LayoutDashboardIcon,
-  },
   {
     title: "Begivenheder",
     href: "/admin/events",
@@ -67,7 +61,6 @@ export const AdminSidebar = ({ email }: AdminSidebarProps) => {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">Countdown</span>
-                <span className="truncate text-xs text-muted-foreground">Admin</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

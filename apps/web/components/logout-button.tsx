@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import type { AuthTokenPayload } from "@/lib/auth";
 import { Button } from "@countdown/ui/components/button";
 
 type LogoutButtonProps = {
   email: string;
-  role: AuthTokenPayload["role"];
+  showAdminLink?: boolean;
 };
 
-export const LogoutButton = ({ email, role }: LogoutButtonProps) => {
+export const LogoutButton = ({ email, showAdminLink = false }: LogoutButtonProps) => {
   const router = useRouter();
 
   const handleLogout = async (): Promise<void> => {
@@ -28,10 +27,10 @@ export const LogoutButton = ({ email, role }: LogoutButtonProps) => {
       <span className="hidden text-sm text-muted-foreground sm:inline">
         {email}
       </span>
-      {role === "ADMIN" ? (
+      {showAdminLink ? (
         <Link href="/admin">
-          <Button type="button" variant="secondary" size="sm">
-            Admin
+          <Button type="button" size="sm">
+            Gå til admin
           </Button>
         </Link>
       ) : null}

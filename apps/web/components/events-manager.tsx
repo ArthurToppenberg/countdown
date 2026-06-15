@@ -1,8 +1,8 @@
 "use client";
 
-import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   createEvent,
@@ -11,13 +11,6 @@ import {
 } from "@/app/admin/events/actions";
 import { toDatetimeLocalValue } from "@/lib/event-validation";
 import { Button } from "@countdown/ui/components/button";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@countdown/ui/components/card";
 import { Input } from "@countdown/ui/components/input";
 import { Label } from "@countdown/ui/components/label";
 import {
@@ -49,6 +42,8 @@ type EventFormState = {
   endDate: string;
 };
 
+type EventRowState = EventFormState;
+
 const emptyFormState = (): EventFormState => ({
   name: "",
   description: "",
@@ -56,105 +51,82 @@ const emptyFormState = (): EventFormState => ({
   endDate: "",
 });
 
-const shortMonthFormatter = new Intl.DateTimeFormat("da-DK", {
-  month: "short",
-});
-
-const dayFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-});
-
-const dayMonthFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-  month: "short",
-});
-
-const fullDateFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-const formatDateRange = (startDate: Date, endDate: Date): string => {
-  const sameMonth =
-    startDate.getMonth() === endDate.getMonth() &&
-    startDate.getFullYear() === endDate.getFullYear();
-  const sameYear = startDate.getFullYear() === endDate.getFullYear();
-
-  if (sameMonth) {
-    return `${dayFormatter.format(startDate)}.–${dayFormatter.format(endDate)}. ${shortMonthFormatter.format(startDate)} ${startDate.getFullYear()}`;
-  }
-
-  if (sameYear) {
-    return `${dayMonthFormatter.format(startDate)} – ${dayMonthFormatter.format(endDate)} ${startDate.getFullYear()}`;
-  }
-
-  return `${fullDateFormatter.format(startDate)} – ${fullDateFormatter.format(endDate)}`;
-};
-
-const toFormState = (event: AdminEvent): EventFormState => ({
+const toRowState = (event: AdminEvent): EventRowState => ({
   name: event.name,
   description: event.description ?? "",
   startDate: toDatetimeLocalValue(new Date(event.startDate)),
   endDate: toDatetimeLocalValue(new Date(event.endDate)),
 });
 
+const isRowDirty = (event: AdminEvent, rowState: EventRowState): boolean => {
+  const original = toRowState(event);
+  return (
+    rowState.name !== original.name ||
+    rowState.description !== original.description ||
+    rowState.startDate !== original.startDate ||
+    rowState.endDate !== original.endDate
+  );
+};
+
 export const EventsManager = ({ events }: EventsManagerProps) => {
   const router = useRouter();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [formState, setFormState] = useState<EventFormState>(emptyFormState);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rowStates, setRowStates] = useState<Record<string, EventRowState>>(() =>
+    Object.fromEntries(events.map((event) => [event.id, toRowState(event)])),
+  );
+  const [savingEventId, setSavingEventId] = useState<string | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [createFormState, setCreateFormState] = useState<EventFormState>(
+    emptyFormState,
+  );
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const isEditing = editingEventId !== null;
-  const sheetTitle = isEditing ? "Rediger begivenhed" : "Ny begivenhed";
-  const sheetDescription = isEditing
-    ? "Opdater detaljerne for begivenheden."
-    : "Tilføj en ny festivalbegivenhed til tidslinjen.";
+  useEffect(() => {
+    setRowStates(
+      Object.fromEntries(events.map((event) => [event.id, toRowState(event)])),
+    );
+  }, [events]);
 
-  const openCreateSheet = (): void => {
-    setEditingEventId(null);
-    setFormState(emptyFormState());
-    setError(null);
-    setSheetOpen(true);
+  const updateRowState = (
+    eventId: string,
+    field: keyof EventRowState,
+    value: string,
+  ): void => {
+    setRowStates((current) => ({
+      ...current,
+      [eventId]: {
+        ...current[eventId],
+        [field]: value,
+      },
+    }));
+    setRowErrors((current) => {
+      const { [eventId]: _removed, ...rest } = current;
+      return rest;
+    });
   };
 
-  const openEditSheet = (event: AdminEvent): void => {
-    setEditingEventId(event.id);
-    setFormState(toFormState(event));
-    setError(null);
-    setSheetOpen(true);
-  };
+  const handleSave = async (event: AdminEvent): Promise<void> => {
+    const rowState = rowStates[event.id];
 
-  const closeSheet = (): void => {
-    setSheetOpen(false);
-    setEditingEventId(null);
-    setFormState(emptyFormState());
-    setError(null);
-  };
-
-  const handleSubmit = async (
-    submitEvent: React.FormEvent<HTMLFormElement>,
-  ): Promise<void> => {
-    submitEvent.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    const result =
-      editingEventId === null
-        ? await createEvent(formState)
-        : await updateEvent(editingEventId, formState);
-
-    if (!result.success) {
-      setError(result.error);
-      setIsSubmitting(false);
+    if (!rowState || !isRowDirty(event, rowState)) {
       return;
     }
 
-    closeSheet();
-    setIsSubmitting(false);
+    setSavingEventId(event.id);
+    const result = await updateEvent(event.id, rowState);
+
+    if (!result.success) {
+      setRowErrors((current) => ({
+        ...current,
+        [event.id]: result.error,
+      }));
+      setSavingEventId(null);
+      return;
+    }
+
+    setSavingEventId(null);
     router.refresh();
   };
 
@@ -171,12 +143,47 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
     const result = await deleteEvent(event.id);
 
     if (!result.success) {
-      setError(result.error);
+      setRowErrors((current) => ({
+        ...current,
+        [event.id]: result.error,
+      }));
       setDeletingEventId(null);
       return;
     }
 
     setDeletingEventId(null);
+    router.refresh();
+  };
+
+  const openCreateSheet = (): void => {
+    setCreateFormState(emptyFormState());
+    setCreateError(null);
+    setSheetOpen(true);
+  };
+
+  const closeCreateSheet = (): void => {
+    setSheetOpen(false);
+    setCreateFormState(emptyFormState());
+    setCreateError(null);
+  };
+
+  const handleCreate = async (
+    submitEvent: React.FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
+    submitEvent.preventDefault();
+    setCreateError(null);
+    setIsCreating(true);
+
+    const result = await createEvent(createFormState);
+
+    if (!result.success) {
+      setCreateError(result.error);
+      setIsCreating(false);
+      return;
+    }
+
+    closeCreateSheet();
+    setIsCreating(false);
     router.refresh();
   };
 
@@ -186,7 +193,7 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Begivenheder</h1>
           <p className="text-sm text-muted-foreground">
-            Administrer festivalbegivenheder på forsiden.
+            Rediger begivenheder direkte i tabellen.
           </p>
         </div>
         <Button onClick={openCreateSheet}>
@@ -195,85 +202,150 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
         </Button>
       </div>
 
-      {error && !sheetOpen ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
       {events.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ingen begivenheder</CardTitle>
-            <CardDescription>
-              Opret din første begivenhed for at vise den på tidslinjen.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <p className="text-sm text-muted-foreground">Ingen begivenheder endnu.</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {events.map((event) => {
-            const startDate = new Date(event.startDate);
-            const endDate = new Date(event.endDate);
-            const isDeleting = deletingEventId === event.id;
+        <div className="overflow-x-auto rounded-xl border">
+          <table className="w-full min-w-[800px] text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-left">
+                <th className="px-4 py-3 font-medium">Navn</th>
+                <th className="px-4 py-3 font-medium">Beskrivelse</th>
+                <th className="px-4 py-3 font-medium">Startdato</th>
+                <th className="px-4 py-3 font-medium">Slutdato</th>
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">Handlinger</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => {
+                const rowState = rowStates[event.id] ?? toRowState(event);
+                const dirty = isRowDirty(event, rowState);
+                const isSaving = savingEventId === event.id;
+                const isDeleting = deletingEventId === event.id;
+                const error = rowErrors[event.id];
 
-            return (
-              <Card key={event.id}>
-                <CardHeader>
-                  <CardTitle>{event.name}</CardTitle>
-                  <CardDescription>
-                    <time dateTime={event.startDate}>
-                      {formatDateRange(startDate, endDate)}
-                    </time>
-                    {event.description ? (
-                      <span className="mt-1.5 block">{event.description}</span>
-                    ) : null}
-                  </CardDescription>
-                  <CardAction className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => openEditSheet(event)}
-                      aria-label={`Rediger ${event.name}`}
-                    >
-                      <PencilIcon />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon-sm"
-                      onClick={() => handleDelete(event)}
-                      disabled={isDeleting}
-                      aria-label={`Slet ${event.name}`}
-                    >
-                      <Trash2Icon />
-                    </Button>
-                  </CardAction>
-                </CardHeader>
-              </Card>
-            );
-          })}
+                return (
+                  <tr key={event.id} className="border-b last:border-b-0">
+                    <td className="px-4 py-3 align-top">
+                      <Input
+                        value={rowState.name}
+                        onChange={(changeEvent) =>
+                          updateRowState(event.id, "name", changeEvent.target.value)
+                        }
+                        aria-label={`Navn for ${event.name}`}
+                        className="min-w-[160px]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <Input
+                        value={rowState.description}
+                        onChange={(changeEvent) =>
+                          updateRowState(
+                            event.id,
+                            "description",
+                            changeEvent.target.value,
+                          )
+                        }
+                        aria-label={`Beskrivelse for ${event.name}`}
+                        placeholder="—"
+                        className="min-w-[180px]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <Input
+                        type="datetime-local"
+                        value={rowState.startDate}
+                        onChange={(changeEvent) =>
+                          updateRowState(
+                            event.id,
+                            "startDate",
+                            changeEvent.target.value,
+                          )
+                        }
+                        aria-label={`Startdato for ${event.name}`}
+                        className="min-w-[180px]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <Input
+                        type="datetime-local"
+                        value={rowState.endDate}
+                        onChange={(changeEvent) =>
+                          updateRowState(
+                            event.id,
+                            "endDate",
+                            changeEvent.target.value,
+                          )
+                        }
+                        aria-label={`Slutdato for ${event.name}`}
+                        className="min-w-[180px]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSave(event)}
+                            disabled={!dirty || isSaving || isDeleting}
+                          >
+                            <CheckIcon />
+                            {isSaving ? "Gemmer..." : "Gem"}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(event)}
+                            disabled={isSaving || isDeleting}
+                            aria-label={`Slet ${event.name}`}
+                          >
+                            <Trash2Icon />
+                          </Button>
+                        </div>
+                        {error ? (
+                          <p
+                            className="max-w-[180px] text-xs text-destructive"
+                            role="alert"
+                          >
+                            {error}
+                          </p>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={(open) => !open && closeSheet()}>
+      <Sheet
+        open={sheetOpen}
+        onOpenChange={(open) => !open && closeCreateSheet()}
+      >
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>{sheetTitle}</SheetTitle>
-            <SheetDescription>{sheetDescription}</SheetDescription>
+            <SheetTitle>Ny begivenhed</SheetTitle>
+            <SheetDescription>
+              Tilføj en ny festivalbegivenhed til tidslinjen.
+            </SheetDescription>
           </SheetHeader>
 
           <form
-            id="event-form"
+            id="event-create-form"
             className="flex flex-col gap-4 px-4"
-            onSubmit={handleSubmit}
+            onSubmit={handleCreate}
           >
             <div className="flex flex-col gap-2">
               <Label htmlFor="event-name">Navn</Label>
               <Input
                 id="event-name"
-                value={formState.name}
+                value={createFormState.name}
                 onChange={(changeEvent) =>
-                  setFormState((current) => ({
+                  setCreateFormState((current) => ({
                     ...current,
                     name: changeEvent.target.value,
                   }))
@@ -287,9 +359,9 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
               <Label htmlFor="event-description">Beskrivelse</Label>
               <Textarea
                 id="event-description"
-                value={formState.description}
+                value={createFormState.description}
                 onChange={(changeEvent) =>
-                  setFormState((current) => ({
+                  setCreateFormState((current) => ({
                     ...current,
                     description: changeEvent.target.value,
                   }))
@@ -304,9 +376,9 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
               <Input
                 id="event-start-date"
                 type="datetime-local"
-                value={formState.startDate}
+                value={createFormState.startDate}
                 onChange={(changeEvent) =>
-                  setFormState((current) => ({
+                  setCreateFormState((current) => ({
                     ...current,
                     startDate: changeEvent.target.value,
                   }))
@@ -320,9 +392,9 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
               <Input
                 id="event-end-date"
                 type="datetime-local"
-                value={formState.endDate}
+                value={createFormState.endDate}
                 onChange={(changeEvent) =>
-                  setFormState((current) => ({
+                  setCreateFormState((current) => ({
                     ...current,
                     endDate: changeEvent.target.value,
                   }))
@@ -331,9 +403,9 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
               />
             </div>
 
-            {error ? (
+            {createError ? (
               <p className="text-sm text-destructive" role="alert">
-                {error}
+                {createError}
               </p>
             ) : null}
           </form>
@@ -342,17 +414,13 @@ export const EventsManager = ({ events }: EventsManagerProps) => {
             <Button
               type="button"
               variant="outline"
-              onClick={closeSheet}
-              disabled={isSubmitting}
+              onClick={closeCreateSheet}
+              disabled={isCreating}
             >
               Annuller
             </Button>
-            <Button type="submit" form="event-form" disabled={isSubmitting}>
-              {isSubmitting
-                ? "Gemmer..."
-                : isEditing
-                  ? "Gem ændringer"
-                  : "Opret begivenhed"}
+            <Button type="submit" form="event-create-form" disabled={isCreating}>
+              {isCreating ? "Opretter..." : "Opret begivenhed"}
             </Button>
           </SheetFooter>
         </SheetContent>

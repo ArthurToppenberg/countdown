@@ -192,7 +192,10 @@ export default async function Home() {
             Festivaltæller
           </p>
           {session ? (
-            <LogoutButton email={session.email} role={session.role} />
+            <LogoutButton
+              email={session.email}
+              showAdminLink={session.role === "ADMIN"}
+            />
           ) : (
             <Link href="/login">
               <Button size="sm" variant="outline">
