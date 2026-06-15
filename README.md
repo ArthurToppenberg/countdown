@@ -22,6 +22,10 @@ pnpm clean        # Remove build outputs and Turbo cache
 
 - `apps/web` — Next.js web app
 
+## Packages
+
+- `packages/db` — Prisma ORM schema, migrations, and database client (Prisma Postgres)
+
 ## Deploy on Vercel
 
 1. Import the repository in Vercel.
