@@ -11,28 +11,28 @@ const festivals2026: FestivalSeed[] = [
   {
     name: "Roskilde Festival",
     description:
-      "Denmark's largest music festival at Dyrskuepladsen, Roskilde.",
+      "Danmarks største musikfestival på Dyrskuepladsen i Roskilde.",
     startDate: new Date("2026-06-27T16:00:00+02:00"),
     endDate: new Date("2026-07-04T23:59:59+02:00"),
   },
   {
     name: "Distortion Ø",
     description:
-      "Ticketed electronic rave on Refshaleøen during Copenhagen Distortion.",
+      "Billetpligtig elektronisk rave på Refshaleøen under Copenhagen Distortion.",
     startDate: new Date("2026-06-05T18:00:00+02:00"),
     endDate: new Date("2026-06-07T06:00:00+02:00"),
   },
   {
     name: "O Days",
     description:
-      "Three-day music festival at Sønder Hoved on Refshaleøen, Copenhagen.",
+      "Tre dages musikfestival ved Sønder Hoved på Refshaleøen i København.",
     startDate: new Date("2026-07-30T13:00:00+02:00"),
     endDate: new Date("2026-08-01T23:59:59+02:00"),
   },
   {
     name: "Karrusel",
     description:
-      "Three days of electronic music in the woods on Refshaleøen, Copenhagen.",
+      "Tre dage med elektronisk musik i skoven på Refshaleøen i København.",
     startDate: new Date("2026-08-27T18:00:00+02:00"),
     endDate: new Date("2026-08-30T03:00:00+02:00"),
   },

@@ -25,6 +25,15 @@ pnpm clean        # Remove build outputs and Turbo cache
 ## Packages
 
 - `packages/db` — Prisma ORM schema, migrations, and database client (Prisma Postgres)
+- `packages/ui` — Shared shadcn/ui components, theme, and utilities
+
+### Adding UI components
+
+From `apps/web`, add shadcn components into the shared UI package:
+
+```bash
+pnpm --filter web exec shadcn add button card
+```
 
 ## Deploy on Vercel
 

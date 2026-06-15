@@ -1,76 +1,155 @@
 import prisma from "@/lib/prisma";
+import { Badge } from "@countdown/ui/components/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@countdown/ui/components/card";
+
+type EventStatus = "upcoming" | "live" | "past";
+
+type EventCountdown = {
+  status: EventStatus;
+  label: string;
+};
+
+const dateFormatter = new Intl.DateTimeFormat("da-DK", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+const getEventCountdown = (
+  startDate: Date,
+  endDate: Date,
+  now: Date,
+): EventCountdown => {
+  if (now > endDate) {
+    return { status: "past", label: "Afsluttet" };
+  }
+
+  if (now >= startDate) {
+    return { status: "live", label: "Live nu" };
+  }
+
+  const diffMs = startDate.getTime() - now.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  if (days > 0) {
+    return {
+      status: "upcoming",
+      label: days === 1 ? `${days} dag` : `${days} dage`,
+    };
+  }
+
+  return {
+    status: "upcoming",
+    label: hours === 1 ? `${hours} time` : `${hours} timer`,
+  };
+};
+
+const statusVariant = (status: EventStatus): "default" | "secondary" | "outline" => {
+  if (status === "live") {
+    return "default";
+  }
+
+  if (status === "upcoming") {
+    return "secondary";
+  }
+
+  return "outline";
+};
 
 export default async function Home() {
-  const formatter = new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-  const users = await prisma.user
+  const now = new Date();
+  const events = await prisma.event
     .findMany({
-      take: 10,
       orderBy: {
-        createdAt: "desc",
+        startDate: "asc",
       },
     })
     .catch(() => undefined);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-12">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-12">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          Next.js + Prisma 7
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Festivaltæller
         </p>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Users from your database, loaded on the server.
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          This page reads from <code className="text-zinc-800 dark:text-zinc-200">apps/web</code>{" "}
-          using the Prisma client from{" "}
-          <code className="text-zinc-800 dark:text-zinc-200">packages/db</code>.
+        <h1 className="text-3xl font-semibold tracking-tight">Næste i 2026</h1>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+          Følg nedtællingen til Danmarks bedste festivaler — Roskilde, Distortion Ø, O Days og
+          Karrusel.
         </p>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Seeded users</h2>
-          <span className="text-sm text-zinc-500">{users?.length ?? 0} total</span>
-        </div>
+      {!events ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Databasen er ikke klar</CardTitle>
+            <CardDescription>
+              Kør{" "}
+              <code className="text-foreground">pnpm --filter @countdown/db db:migrate</code>, derefter{" "}
+              <code className="text-foreground">pnpm --filter @countdown/db db:seed</code>, og
+              genindlæs siden.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : events.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ingen begivenheder endnu</CardTitle>
+            <CardDescription>
+              Kør{" "}
+              <code className="text-foreground">pnpm --filter @countdown/db db:seed</code> for at
+              indlæse festivalerne i 2026.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <ul className="grid gap-4">
+          {events.map((event) => {
+            const countdown = getEventCountdown(event.startDate, event.endDate, now);
 
-        {!users ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Could not query users yet. Run{" "}
-            <code className="text-zinc-800 dark:text-zinc-200">pnpm --filter @countdown/db db:migrate</code>
-            , then{" "}
-            <code className="text-zinc-800 dark:text-zinc-200">pnpm --filter @countdown/db db:seed</code>
-            , then refresh.
-          </p>
-        ) : users.length === 0 ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            No users yet. Run{" "}
-            <code className="text-zinc-800 dark:text-zinc-200">pnpm --filter @countdown/db db:seed</code>{" "}
-            after your first migration.
-          </p>
-        ) : (
-          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {users.map((user) => (
-              <li key={user.id} className="flex items-center justify-between gap-4 py-3">
-                <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                    {user.name ?? "Unnamed user"}
-                  </p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
-                </div>
-                <time
-                  className="shrink-0 text-sm text-zinc-500"
-                  dateTime={user.createdAt.toISOString()}
-                >
-                  {formatter.format(user.createdAt)}
-                </time>
+            return (
+              <li key={event.id}>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <CardTitle>{event.name}</CardTitle>
+                        {event.description ? (
+                          <CardDescription>{event.description}</CardDescription>
+                        ) : null}
+                      </div>
+                      <Badge variant={statusVariant(countdown.status)}>{countdown.label}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid gap-1 text-sm text-muted-foreground">
+                    <p>
+                      Starter{" "}
+                      <time
+                        className="text-foreground"
+                        dateTime={event.startDate.toISOString()}
+                      >
+                        {dateFormatter.format(event.startDate)}
+                      </time>
+                    </p>
+                    <p>
+                      Slutter{" "}
+                      <time className="text-foreground" dateTime={event.endDate.toISOString()}>
+                        {dateFormatter.format(event.endDate)}
+                      </time>
+                    </p>
+                  </CardContent>
+                </Card>
               </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+            );
+          })}
+        </ul>
+      )}
+    </main>
   );
 }
