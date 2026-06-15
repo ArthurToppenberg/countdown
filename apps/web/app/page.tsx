@@ -185,7 +185,16 @@ export default async function Home() {
     .catch(() => undefined);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pt-8 pb-16">
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-[url('/DJ.JPG')] bg-cover bg-fixed bg-center bg-no-repeat grayscale"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-background/80"
+      />
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pt-8 pb-16">
       <div className="mb-12">
         <div className="mb-2 flex items-center justify-between gap-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -345,6 +354,7 @@ export default async function Home() {
           </ol>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
