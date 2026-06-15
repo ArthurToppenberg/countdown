@@ -1,5 +1,10 @@
+import Link from "next/link";
+
+import { LogoutButton } from "@/components/logout-button";
+import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Badge } from "@countdown/ui/components/badge";
+import { Button } from "@countdown/ui/components/button";
 import {
   Card,
   CardAction,
@@ -169,6 +174,7 @@ const statusCardClassName = (status: EventStatus): string => {
 };
 
 export default async function Home() {
+  const session = await getSession();
   const now = new Date();
   const events = await prisma.event
     .findMany({
@@ -181,9 +187,20 @@ export default async function Home() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pb-16">
       <div className="mb-12">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Festivaltæller
-        </p>
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Festivaltæller
+          </p>
+          {session ? (
+            <LogoutButton email={session.email} role={session.role} />
+          ) : (
+            <Link href="/login">
+              <Button size="sm" variant="outline">
+                Log ind
+              </Button>
+            </Link>
+          )}
+        </div>
         <h1 className="text-3xl font-semibold tracking-tight">Tidslinje 2026</h1>
         <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
           Følg festivalåret kronologisk — fra Distortion Ø til Karrusel.

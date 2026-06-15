@@ -7,5 +7,7 @@
 *
 * 🟢 You can import this file directly.
 */
-// This file is empty because there are no enums in the schema.
-export {};
+export const Role = {
+    ADMIN: 'ADMIN',
+    USER: 'USER'
+};
