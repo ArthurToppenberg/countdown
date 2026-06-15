@@ -15,6 +15,49 @@ type EventCountdown = {
   label: string;
 };
 
+type FestivalEvent = {
+  id: string;
+  name: string;
+  description: string | null;
+  startDate: Date;
+  endDate: Date;
+};
+
+type TimelineEventItem = {
+  kind: "event";
+  event: FestivalEvent;
+};
+
+type TimelineTodayItem = {
+  kind: "today";
+  date: Date;
+};
+
+type TimelineItem = TimelineEventItem | TimelineTodayItem;
+
+const getItemDate = (item: TimelineItem): Date =>
+  item.kind === "today" ? item.date : item.event.startDate;
+
+const buildTimelineItems = (events: FestivalEvent[], now: Date): TimelineItem[] => {
+  const items: TimelineItem[] = [];
+  let todayInserted = false;
+
+  for (const event of events) {
+    if (!todayInserted && now < event.startDate) {
+      items.push({ kind: "today", date: now });
+      todayInserted = true;
+    }
+
+    items.push({ kind: "event", event });
+  }
+
+  if (!todayInserted) {
+    items.push({ kind: "today", date: now });
+  }
+
+  return items;
+};
+
 const shortMonthFormatter = new Intl.DateTimeFormat("da-DK", {
   month: "short",
 });
@@ -178,12 +221,57 @@ export default async function Home() {
           />
 
           <ol className="flex flex-col gap-10">
-            {events.map((event, index) => {
-              const countdown = getEventCountdown(event.startDate, event.endDate, now);
-              const previousEvent = index > 0 ? events[index - 1] : undefined;
+            {buildTimelineItems(events, now).map((item, index, timelineItems) => {
+              const previousItem = index > 0 ? timelineItems[index - 1] : undefined;
+              const itemDate = getItemDate(item);
               const showMonthHeader =
-                !previousEvent ||
-                getMonthKey(previousEvent.startDate) !== getMonthKey(event.startDate);
+                !previousItem ||
+                getMonthKey(getItemDate(previousItem)) !== getMonthKey(itemDate);
+
+              if (item.kind === "today") {
+                return (
+                  <li key="today" className="flex flex-col gap-6">
+                    {showMonthHeader ? (
+                      <div className="relative grid grid-cols-[1.375rem_1fr] items-center gap-x-5">
+                        <div className="flex justify-center">
+                          <span className="z-10 size-2 rounded-full bg-border" aria-hidden />
+                        </div>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                          {monthYearFormatter.format(item.date)}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <div className="relative grid grid-cols-[1.375rem_1fr] gap-x-5">
+                      <div className="flex justify-center pt-3">
+                        <span
+                          className="z-10 size-3 shrink-0 rounded-full bg-primary ring-4 ring-primary/25"
+                          aria-hidden
+                        />
+                      </div>
+
+                      <div className="relative min-w-0">
+                        <div
+                          className="absolute top-3 -left-5 h-px w-5 bg-primary/40"
+                          aria-hidden
+                        />
+                        <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 ring-1 ring-primary/20">
+                          <p className="text-sm font-medium">I dag</p>
+                          <time
+                            className="text-sm text-muted-foreground"
+                            dateTime={item.date.toISOString()}
+                          >
+                            {fullDateFormatter.format(item.date)}
+                          </time>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              }
+
+              const event = item.event;
+              const countdown = getEventCountdown(event.startDate, event.endDate, now);
 
               return (
                 <li key={event.id} className="flex flex-col gap-6">
