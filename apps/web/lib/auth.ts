@@ -74,6 +74,20 @@ export const getSession = async (): Promise<AuthTokenPayload | null> => {
   return verifyAuthToken(token);
 };
 
+export const requireAdminSession = async (): Promise<AuthTokenPayload> => {
+  const session = await getSession();
+
+  if (!session) {
+    throw new Error("Ikke logget ind.");
+  }
+
+  if (session.role !== "ADMIN") {
+    throw new Error("Ingen adgang.");
+  }
+
+  return session;
+};
+
 export const authCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",

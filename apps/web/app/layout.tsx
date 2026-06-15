@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { ModeToggle } from "@countdown/ui/components/mode-toggle";
-import { ThemeProvider } from "@countdown/ui/components/theme-provider";
-
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,17 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="da"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <header className="flex items-center justify-end px-6 py-4">
-            <ModeToggle />
-          </header>
-          {children}
-        </ThemeProvider>
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

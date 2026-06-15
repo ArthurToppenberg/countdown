@@ -185,7 +185,7 @@ export default async function Home() {
     .catch(() => undefined);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pb-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pt-8 pb-16">
       <div className="mb-12">
         <div className="mb-2 flex items-center justify-between gap-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
