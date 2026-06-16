@@ -1,5 +1,5 @@
 import { DagligManager } from "@/components/daglig-manager";
-import { type DagligEmailEventProps } from "@/emails/daglig-email";
+import { type DagligEmailEventProps } from "@countdown/email";
 import { getSession } from "@/lib/auth";
 import {
   buildDagligEmailProps,

@@ -23,7 +23,7 @@ Kør fra repo-roden med `pnpm --filter @countdown/db <script>`, eller fra `packa
 | `db:migrate` | `prisma migrate dev` | Opret og anvend en ny migration i udvikling |
 | `db:push` | `prisma db push` | Synk schema direkte uden migration (kun hurtig prototyping) |
 
-## Skemaændringer (mennesker og agenter)
+## Skemaændringer (udviklere)
 
 1. Redigér **kun** `prisma/schema.prisma`.
 2. Kør migration via CLI:
@@ -41,43 +41,48 @@ pnpm --filter @countdown/db db:migrate
 
 > **Læs dette afsnit før du rører databasen.**
 
-### Gør altid dette
+### LLM'er må aldrig køre migrationer
+
+**En LLM må aldrig oprette, anvende eller ændre database-migrationer.** Det er udelukkende udviklerens ansvar.
+
+Det gælder også — især — disse kommandoer:
+
+- `pnpm --filter @countdown/db db:migrate`
+- `pnpm --filter @countdown/db db:push`
+- `prisma migrate dev`, `prisma migrate deploy`, `prisma db push`
+
+Når schema er ændret, skal LLM'en stoppe og bede udvikleren køre migrationen manuelt.
+
+### Gør altid dette (LLM)
 
 - Ændr databasestruktur **udelukkende** i `prisma/schema.prisma`.
-- Opret migrationer **udelukkende** med Prisma CLI:
+- Efter schema-ændringer: informér udvikleren om at køre `db:migrate` — kør den **ikke** selv.
 
-```bash
-pnpm --filter @countdown/db db:migrate
-```
+### Gør aldrig dette (LLM)
 
-- Lad Prisma generere migrationsmappen (tidsstempel + navn) og `migration.sql`.
-- Kør `db:generate` efter schema-ændringer, hvis `migrate dev` ikke allerede har gjort det.
-
-### Gør aldrig dette
-
+- **Kør aldrig** `db:migrate`, `db:push` eller andre Prisma-migrationskommandoer.
 - **Opret aldrig** `migration.sql` manuelt.
 - **Opret aldrig** en ny mappe under `prisma/migrations/` i hånden.
 - **Skriv aldrig** rå SQL til schema-ændringer i stedet for at opdatere `schema.prisma`.
-- **Redigér aldrig** en migration der allerede er committet og anvendt — lav en ny migration i stedet.
+- **Redigér aldrig** en migration der allerede er committet og anvendt — bed udvikleren om en ny migration i stedet.
 - **Slet aldrig** eller omdøb eksisterende migrationsmapper for at “rette” historik.
 
 ### Hvorfor
 
-Prisma holder `_prisma_migrations`-tabellen synkron med filerne i `prisma/migrations/`. Manuelle SQL-filer giver ofte checksum-fejl, manglende historik og divergerende schema mellem miljøer. CLI'en sikrer korrekt SQL, rækkefølge og checksum.
+Prisma holder `_prisma_migrations`-tabellen synkron med filerne i `prisma/migrations/`. Migrationer påvirker fælles databaser og deploy-historik — derfor skal de altid køres og committes af en udvikler, ikke af en agent.
 
-### Korrekt vs. forkert workflow
+### Korrekt vs. forkert workflow (LLM)
 
 **Korrekt:**
 
 1. Tilføj felt/model i `schema.prisma`.
-2. `pnpm --filter @countdown/db db:migrate`
-3. Commit schema + ny autogenereret migrationsmappe.
+2. Bed udvikleren køre `pnpm --filter @countdown/db db:migrate` og committe migrationsfilerne.
 
 **Forkert (må ikke bruges):**
 
-1. Oprette `prisma/migrations/20260616120000_add_foo/migration.sql` med håndskrevet SQL.
-2. Kun ændre schema uden at køre `db:migrate`.
-3. Bruge `db:push` til ændringer der skal deployes — brug `db:migrate` til varige schema-ændringer.
+1. LLM'en kører `db:migrate` eller `db:push`.
+2. Oprette `prisma/migrations/20260616120000_add_foo/migration.sql` med håndskrevet SQL.
+3. Kun ændre schema uden at informere udvikleren om manglende migration.
 
 ### Produktion
 

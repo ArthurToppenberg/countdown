@@ -6,6 +6,10 @@ import {
   type EventStatus,
   getEventCountdown,
 } from "@/lib/event-countdown";
+import {
+  getMinigamePointsLeaderboard,
+  getTodaysMinigameScore,
+} from "@/lib/minigame/daily-minigame";
 import prisma from "@/lib/prisma";
 import { Badge } from "@countdown/ui/components/badge";
 import { Button } from "@countdown/ui/components/button";
@@ -143,13 +147,20 @@ const statusCardClassName = (status: EventStatus): string => {
 export default async function Home() {
   const session = await getSession();
   const now = new Date();
-  const events = await prisma.event
-    .findMany({
-      orderBy: {
-        startDate: "asc",
-      },
-    })
-    .catch(() => undefined);
+  const [events, leaderboard, todaysScore] = await Promise.all([
+    prisma.event
+      .findMany({
+        orderBy: {
+          startDate: "asc",
+        },
+      })
+      .catch(() => undefined),
+    getMinigamePointsLeaderboard(10).catch(() => undefined),
+    session
+      ? getTodaysMinigameScore(session.userId).catch(() => undefined)
+      : Promise.resolve(null),
+  ]);
+  const hasPlayedTodaysGame = Boolean(todaysScore);
 
   return (
     <>
@@ -161,7 +172,7 @@ export default async function Home() {
         muted
         playsInline
         preload="auto"
-        src="/IMG_4031.MOV"
+        src="/background.mp4"
       />
       <div
         aria-hidden
@@ -194,6 +205,41 @@ export default async function Home() {
             Fra Distortion Ø til Karrusel.
           </p>
         </div>
+
+        {session && !hasPlayedTodaysGame ? (
+          <div className="mb-8">
+            <Link href="/game">
+              <Button className="w-full">Spil dagens minigame</Button>
+            </Link>
+          </div>
+        ) : null}
+
+        {leaderboard && leaderboard.length > 0 ? (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Pointtavle</CardTitle>
+              <CardDescription>Spillere med flest point i alt</CardDescription>
+            </CardHeader>
+            <ol className="flex flex-col gap-2 px-6 pb-6">
+              {leaderboard.map((entry, index) => (
+                <li
+                  key={entry.userId}
+                  className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-background/60 px-3 py-2"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-5 shrink-0 text-center text-sm font-semibold text-muted-foreground">
+                      {index + 1}
+                    </span>
+                    <span className="truncate text-sm font-medium">{entry.name}</span>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums">
+                    {entry.points}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Card>
+        ) : null}
 
         {!events ? (
           <Card>

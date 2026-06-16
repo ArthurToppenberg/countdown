@@ -1,2 +1,2 @@
 @import "@countdown/ui/globals.css";
-@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@import "@countdown/minigame/minigame.css";

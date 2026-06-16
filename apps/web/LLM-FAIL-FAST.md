@@ -77,7 +77,7 @@ export const sendDagligEmail = async (input: DagligEmailInput): Promise<void> =>
 **3. Brug `requireUserName()`**
 
 ```ts
-import { requireUserName } from "@/lib/email/require-user-name";
+import { requireUserName } from "@countdown/email";
 
 const name = requireUserName(
   input.name,
@@ -113,8 +113,8 @@ I admin-lister må du gerne vise at navn mangler (`"—"` i en tabelcelle er OK 
 | Lag | Ansvar |
 |-----|--------|
 | Server actions / API routes | Validér input, kast `Error` med dansk fejlbesked |
-| `lib/email/*` send-funktioner | Validér før `sendReactEmail` / `render` |
-| React Email-skabeloner (`emails/`) | Antag gyldige props — ingen fallbacks |
+| `packages/email/*` send-funktioner | Validér før `sendReactEmail` / `render` |
+| React Email-skabeloner (`packages/email/src/templates/`) | Antag gyldige props — ingen fallbacks |
 | React UI-komponenter | Antag gyldige props fra parent; disable knapper for ugyldig state |
 | Database-lag | `name` kan være `null` i DB — konverter til fejl ved *brug*, ikke ved *visning* af rå data |
 

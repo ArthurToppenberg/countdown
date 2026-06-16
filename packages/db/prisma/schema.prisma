@@ -13,15 +13,16 @@ enum Role {
 }
 
 model User {
-  id                     String    @id @default(cuid())
-  email                  String    @unique
+  id                     String     @id @default(cuid())
+  email                  String     @unique
   name                   String?
-  role                   Role      @default(USER)
+  role                   Role       @default(USER)
   password               String?
-  passwordResetToken     String?   @unique
+  passwordResetToken     String?    @unique
   passwordResetExpiresAt DateTime?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  minigames              Minigame[]
 }
 
 model Event {
@@ -32,4 +33,13 @@ model Event {
   endDate     DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Minigame {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  points    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -1,0 +1,30 @@
+{
+  "name": "@countdown/minigame",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./minigame.css": "./src/minigame.css",
+    "./games/cross-the-vodka-redbull": "./src/games/cross-the-vodka-redbull/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "jose": "^6.2.3",
+    "server-only": "^0.0.1"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "rimraf": "^6.1.3",
+    "typescript": "^5"
+  }
+}

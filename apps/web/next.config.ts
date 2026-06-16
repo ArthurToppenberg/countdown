@@ -13,7 +13,7 @@ const requireEnv = (key: string): string => {
 requireEnv("RESEND_FROM_EMAIL");
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@countdown/db", "@countdown/ui"],
+  transpilePackages: ["@countdown/db", "@countdown/email", "@countdown/minigame", "@countdown/ui"],
 };
 
 export default nextConfig;

@@ -25,6 +25,8 @@ pnpm clean        # Remove build outputs and Turbo cache
 ## Packages
 
 - `packages/db` — Prisma ORM schema, migrations, and database client (Prisma Postgres)
+- `packages/email` — React Email templates and Resend send helpers
+- `packages/minigame` — Minigame definitions, result types, and game logic
 - `packages/ui` — Shared shadcn/ui components, theme, and utilities
 
 ### Adding UI components

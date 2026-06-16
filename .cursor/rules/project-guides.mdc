@@ -15,4 +15,4 @@ Kort: ingen fallbacks for påkrævede props. Validér ved grænsen og kast `Erro
 
 Læs **`packages/db/README.md`** før du rører databasen, schema eller migrationer.
 
-Kort: ændr kun `schema.prisma`, kør `pnpm --filter @countdown/db db:migrate`, commit autogenererede migrationsfiler. Opret aldrig `migration.sql` manuelt.
+Kort: ændr kun `schema.prisma`. Kør **aldrig** migrationer — det er udviklerens ansvar (`pnpm --filter @countdown/db db:migrate`). Opret aldrig `migration.sql` manuelt.

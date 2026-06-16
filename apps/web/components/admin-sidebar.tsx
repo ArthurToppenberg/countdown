@@ -50,7 +50,7 @@ const adminNavItems: AdminNavItem[] = [
 const gamesNavItems: AdminNavItem[] = [
   {
     title: "Games",
-    href: "/admin/games",
+    href: "/admin/game",
     icon: Gamepad2Icon,
   },
 ];

@@ -12,16 +12,15 @@
   },
   "dependencies": {
     "@countdown/db": "workspace:*",
+    "@countdown/email": "workspace:*",
+    "@countdown/minigame": "workspace:*",
     "@countdown/ui": "workspace:*",
-    "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.0.9",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
     "lucide-react": "^1.18.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "resend": "^6.12.4"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

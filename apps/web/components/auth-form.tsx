@@ -18,6 +18,7 @@ type AuthMode = "login" | "register";
 
 type AuthFormProps = {
   mode: AuthMode;
+  nextPath?: string;
 };
 
 type AuthResponse = {
@@ -47,7 +48,7 @@ const authCopy: Record<
   },
 };
 
-export const AuthForm = ({ mode }: AuthFormProps) => {
+export const AuthForm = ({ mode, nextPath }: AuthFormProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,7 +94,7 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
       return;
     }
 
-    router.push("/");
+    router.push(nextPath?.startsWith("/") ? nextPath : "/");
     router.refresh();
   };
 

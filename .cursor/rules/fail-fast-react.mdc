@@ -23,7 +23,7 @@ Manglende forretningsdata er en fejl. Kast `Error` ved grænsen (send-funktion, 
 
 - Påkrævede props som `string` (ikke nullable) i typer og skabeloner
 - Validér i `lib/email/*` og server actions før `render` / `sendReactEmail`
-- Brug `requireUserName()` fra `lib/email/require-user-name.ts`
+- Brug `requireUserName()` fra `@countdown/email`
 - Én code path i React Email — antag gyldige props
 - Disable send-knap i UI når data mangler; server validerer stadig
 
