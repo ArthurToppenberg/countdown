@@ -4,9 +4,15 @@ export type SetPasswordEmailInput = {
   setPasswordUrl: string;
 };
 
+export type DagligEmailLeaderboardEntry = {
+  name: string;
+  points: number;
+};
+
 export type DagligEmailEventProps = {
   eventName: string;
   daysRemainingLabel: string;
+  leaderboard: DagligEmailLeaderboardEntry[];
 };
 
 export type DagligEmailSendInput = DagligEmailEventProps & {

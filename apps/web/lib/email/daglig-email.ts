@@ -6,6 +6,7 @@ import {
   type DagligEmailEventProps,
 } from "@countdown/email";
 
+import { getMinigamePointsLeaderboard } from "@/lib/minigame/daily-minigame";
 import { getNextEvent } from "@/lib/next-event";
 
 export type DagligEmailInput = {
@@ -16,7 +17,10 @@ export type DagligEmailInput = {
 export const buildDagligEmailProps = async (): Promise<
   DagligEmailEventProps | undefined
 > => {
-  const nextEvent = await getNextEvent();
+  const [nextEvent, leaderboardEntries] = await Promise.all([
+    getNextEvent(),
+    getMinigamePointsLeaderboard(3),
+  ]);
 
   if (!nextEvent) {
     return undefined;
@@ -25,6 +29,10 @@ export const buildDagligEmailProps = async (): Promise<
   return {
     eventName: nextEvent.name,
     daysRemainingLabel: nextEvent.daysRemainingLabel,
+    leaderboard: leaderboardEntries.map((entry) => ({
+      name: entry.name,
+      points: entry.points,
+    })),
   };
 };
 

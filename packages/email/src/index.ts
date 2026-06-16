@@ -10,6 +10,7 @@ export { sendPasswordResetEmail } from "./send/password-reset-email";
 export { sendWelcomeEmail } from "./send/welcome-email";
 export {
   type DagligEmailEventProps,
+  type DagligEmailLeaderboardEntry,
   type DagligEmailSendInput,
   type SetPasswordEmailInput,
 } from "./types";

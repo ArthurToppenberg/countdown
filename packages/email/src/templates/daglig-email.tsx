@@ -1,12 +1,14 @@
 import {
   Button,
+  Column,
   Heading,
   Hr,
+  Row,
   Section,
   Text,
 } from "@react-email/components";
 
-import { type DagligEmailEventProps } from "../types";
+import { type DagligEmailEventProps, type DagligEmailLeaderboardEntry } from "../types";
 import { EmailLayout } from "./email-layout";
 import {
   bodyStyle,
@@ -19,6 +21,11 @@ export type DagligEmailProps = DagligEmailEventProps & {
   name: string;
   gameUrl: string;
 };
+
+const formatPoints = (points: number): string =>
+  new Intl.NumberFormat("da-DK").format(points);
+
+const LEADERBOARD_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
 export const getDagligEmailTitle = ({
   eventName,
@@ -42,6 +49,27 @@ export const DagligEmail = (props: DagligEmailProps) => {
       </Section>
 
       <Hr style={dividerStyle} />
+
+      {props.leaderboard.length > 0 ? (
+        <>
+          <Section style={leaderboardSectionStyle}>
+            <Heading as="h2" style={leaderboardTitleStyle}>
+              Top 3 pointtavle
+            </Heading>
+            <Text style={leaderboardDescriptionStyle}>
+              Spillere med flest point i alt
+            </Text>
+            {props.leaderboard.map((entry, index) => (
+              <LeaderboardRow
+                entry={entry}
+                key={`leaderboard-${index + 1}`}
+                rank={index + 1}
+              />
+            ))}
+          </Section>
+          <Hr style={leaderboardDividerStyle} />
+        </>
+      ) : null}
 
       <Text style={centeredBodyStyle}>
         Nååår{" "}
@@ -99,9 +127,106 @@ const dividerStyle = {
   margin: "0 0 24px",
 };
 
+const leaderboardDividerStyle = {
+  borderColor: "#e4e4e7",
+  borderTop: "1px solid #e4e4e7",
+  margin: "24px 0 24px",
+};
+
 const centeredBodyStyle = {
   ...bodyStyle,
   fontSize: "17px",
   margin: "0",
   textAlign: "center" as const,
+};
+
+type LeaderboardRowProps = {
+  entry: DagligEmailLeaderboardEntry;
+  rank: number;
+};
+
+const LeaderboardRow = ({ entry, rank }: LeaderboardRowProps) => {
+  const medal = LEADERBOARD_MEDALS[rank - 1] ?? String(rank);
+
+  return (
+    <Section style={leaderboardRowStyle}>
+      <Row>
+        <Column style={leaderboardRankColumnStyle}>
+          <Text style={leaderboardRankStyle}>{medal}</Text>
+        </Column>
+        <Column style={leaderboardNameColumnStyle}>
+          <Text style={leaderboardNameStyle}>{entry.name}</Text>
+        </Column>
+        <Column style={leaderboardPointsColumnStyle}>
+          <Text style={leaderboardPointsStyle}>{formatPoints(entry.points)}</Text>
+        </Column>
+      </Row>
+    </Section>
+  );
+};
+
+const leaderboardSectionStyle = {
+  margin: "0 0 24px",
+};
+
+const leaderboardTitleStyle = {
+  color: "#18181b",
+  fontSize: "18px",
+  fontWeight: "600",
+  lineHeight: "1.3",
+  margin: "0 0 4px",
+  textAlign: "center" as const,
+};
+
+const leaderboardDescriptionStyle = {
+  color: "#71717a",
+  fontSize: "13px",
+  lineHeight: "1.4",
+  margin: "0 0 16px",
+  textAlign: "center" as const,
+};
+
+const leaderboardRowStyle = {
+  backgroundColor: "#fafafa",
+  border: "1px solid #e4e4e7",
+  borderRadius: "10px",
+  margin: "0 0 8px",
+  padding: "10px 14px",
+};
+
+const leaderboardRankColumnStyle = {
+  width: "32px",
+};
+
+const leaderboardNameColumnStyle = {
+  width: "auto",
+};
+
+const leaderboardPointsColumnStyle = {
+  textAlign: "right" as const,
+  width: "72px",
+};
+
+const leaderboardRankStyle = {
+  color: "#18181b",
+  fontSize: "16px",
+  lineHeight: "1.4",
+  margin: "0",
+};
+
+const leaderboardNameStyle = {
+  color: "#18181b",
+  fontSize: "14px",
+  fontWeight: "600",
+  lineHeight: "1.4",
+  margin: "0",
+};
+
+const leaderboardPointsStyle = {
+  color: "#18181b",
+  fontSize: "14px",
+  fontWeight: "700",
+  lineHeight: "1.4",
+  margin: "0",
+  textAlign: "right" as const,
 };
