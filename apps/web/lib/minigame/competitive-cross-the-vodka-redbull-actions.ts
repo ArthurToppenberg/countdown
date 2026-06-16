@@ -8,6 +8,7 @@ import {
   type CrossTheVodkaRedbullPublicState,
 } from "@countdown/minigame";
 
+import { assertNoActiveEventForMinigame } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
 
 import {
@@ -21,6 +22,8 @@ const requirePlayableSession = async (): Promise<string> => {
   if (!session) {
     throw new Error("Du skal være logget ind for at spille.");
   }
+
+  await assertNoActiveEventForMinigame();
 
   const todaysScore = await getTodaysMinigameScore(session.userId);
 

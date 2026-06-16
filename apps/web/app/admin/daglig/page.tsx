@@ -1,3 +1,4 @@
+import { getActiveEvent } from "@/lib/active-event";
 import { DagligManager } from "@/components/daglig-manager";
 import { type DagligEmailEventProps } from "@countdown/email";
 import { getSession } from "@/lib/auth";
@@ -11,7 +12,7 @@ import prisma from "@/lib/prisma";
 export default async function AdminDagligPage() {
   const session = await getSession();
 
-  const [users, emailProps, adminUser] = await Promise.all([
+  const [users, emailProps, adminUser, activeEvent] = await Promise.all([
     prisma.user
       .findMany({
         where: {
@@ -34,6 +35,7 @@ export default async function AdminDagligPage() {
           select: { name: true },
         })
       : Promise.resolve(null),
+    getActiveEvent().catch(() => undefined),
   ]);
 
   if (!users) {
@@ -65,7 +67,7 @@ export default async function AdminDagligPage() {
 
   return (
     <DagligManager
-      canSendEmail={emailProps !== undefined}
+      canSendEmail={emailProps !== undefined && activeEvent === undefined}
       previewHtml={previewHtml}
       subject={subject}
       users={users}

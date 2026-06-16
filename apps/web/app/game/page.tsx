@@ -6,6 +6,7 @@ import {
   MinigamePlayer,
 } from "@countdown/minigame";
 
+import { getActiveEvent } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
 import {
   cashOutCompetitiveCrossTheVodkaRedbull,
@@ -19,6 +20,12 @@ export default async function DailyGamePage() {
 
   if (!session) {
     redirect("/login?next=/game");
+  }
+
+  const activeEvent = await getActiveEvent();
+
+  if (activeEvent) {
+    redirect("/");
   }
 
   const todaysScore = await getTodaysMinigameScore(session.userId);

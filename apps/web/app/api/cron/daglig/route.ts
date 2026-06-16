@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
+import { getActiveEvent } from "@/lib/active-event";
 import { sendDagligEmailToActiveUsers } from "@/lib/email/daglig-email";
 import { getCopenhagenHour } from "@/lib/minigame/copenhagen-date";
 import { logger } from "@/lib/logger";
@@ -45,6 +46,16 @@ export const POST = async (request: Request): Promise<NextResponse> => {
   if (!isForced(request) && getCopenhagenHour(new Date()) !== SCHEDULED_COPENHAGEN_HOUR) {
     logger.info("Daglig", "Skipping cron send — not 6 AM Copenhagen time");
     return NextResponse.json({ sent: false, reason: "outside-window" });
+  }
+
+  const activeEvent = await getActiveEvent();
+
+  if (activeEvent) {
+    logger.info("Daglig", "Skipping cron send — active event in progress", {
+      eventId: activeEvent.id,
+      eventName: activeEvent.name,
+    });
+    return NextResponse.json({ sent: false, reason: "active-event" });
   }
 
   try {

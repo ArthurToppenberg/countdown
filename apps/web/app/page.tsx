@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
+import { getActiveEvent } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
 import {
   type EventStatus,
@@ -147,7 +148,7 @@ const statusCardClassName = (status: EventStatus): string => {
 export default async function Home() {
   const session = await getSession();
   const now = new Date();
-  const [events, leaderboard, todaysScore] = await Promise.all([
+  const [events, leaderboard, todaysScore, activeEvent] = await Promise.all([
     prisma.event
       .findMany({
         orderBy: {
@@ -159,8 +160,10 @@ export default async function Home() {
     session
       ? getTodaysMinigameScore(session.userId).catch(() => undefined)
       : Promise.resolve(null),
+    getActiveEvent(now).catch(() => undefined),
   ]);
   const hasPlayedTodaysGame = Boolean(todaysScore);
+  const canPlayOfficialMinigame = !activeEvent && !hasPlayedTodaysGame;
 
   return (
     <>
@@ -206,7 +209,7 @@ export default async function Home() {
           </p>
         </div>
 
-        {session && !hasPlayedTodaysGame ? (
+        {session && canPlayOfficialMinigame ? (
           <div className="mb-8">
             <Link href="/game">
               <Button className="w-full">Spil dagens minigame</Button>

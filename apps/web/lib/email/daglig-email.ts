@@ -7,6 +7,7 @@ import {
   type DagligEmailEventProps,
 } from "@countdown/email";
 
+import { assertNoActiveEventForEmail } from "@/lib/active-event";
 import { logger } from "@/lib/logger";
 import { getMinigamePointsLeaderboard } from "@/lib/minigame/daily-minigame";
 import { getNextEvent } from "@/lib/next-event";
@@ -47,6 +48,8 @@ export const buildDagligEmailProps = async (): Promise<
 export const sendDagligEmail = async (
   input: DagligEmailInput,
 ): Promise<void> => {
+  await assertNoActiveEventForEmail();
+
   const eventProps = await buildDagligEmailProps();
 
   if (!eventProps) {
@@ -58,6 +61,8 @@ export const sendDagligEmail = async (
 
 export const sendDagligEmailToActiveUsers =
   async (): Promise<DagligEmailBatchResult> => {
+    await assertNoActiveEventForEmail();
+
     const eventProps = await buildDagligEmailProps();
 
     if (!eventProps) {
