@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check-types": "tsc --noEmit",
-    "clean": "rimraf .next",
-    "send-daglig-email": "tsx --import ./scripts/react-global.ts scripts/send-scheduled-daglig-email.ts"
+    "clean": "rimraf .next"
   },
   "dependencies": {
     "@countdown/db": "workspace:*",
@@ -33,7 +32,6 @@
     "eslint-config-next": "16.2.9",
     "shadcn": "^4.11.0",
     "tailwindcss": "^4",
-    "tsx": "^4.7.1",
     "typescript": "^5"
   }
 }

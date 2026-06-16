@@ -2,7 +2,8 @@ name: Send daglig email
 
 on:
   schedule:
-    # 04:00 and 05:00 UTC cover 06:00 Copenhagen in CEST and CET; the script skips the wrong hour.
+    # 04:00 and 05:00 UTC cover 06:00 Copenhagen in CEST and CET; the endpoint only
+    # sends during the 06:00 Copenhagen window, so the other run is a no-op.
     - cron: "0 4,5 * * *"
   workflow_dispatch:
     inputs:
@@ -15,31 +16,23 @@ jobs:
   send-daglig-email:
     runs-on: ubuntu-latest
     environment: production
-    env:
-      NODE_ENV: production
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
-      APP_URL: ${{ vars.APP_URL }}
-      FORCE_SEND: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm --filter @countdown/db db:generate
-
-      - name: Send daglig email
-        run: pnpm --filter web send-daglig-email
+      - name: Trigger daily email endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+        run: |
+          set -euo pipefail
+          url="${APP_URL%/}/api/cron/daglig"
+          if [ "${FORCE}" = "true" ]; then
+            url="${url}?force=true"
+          fi
+          status=$(curl --silent --show-error --fail-with-body \
+            --output /tmp/daglig-response.json --write-out "%{http_code}" \
+            --request POST \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "${url}")
+          echo "HTTP ${status}"
+          cat /tmp/daglig-response.json
+          echo
