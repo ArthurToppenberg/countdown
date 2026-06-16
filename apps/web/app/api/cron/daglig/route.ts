@@ -1,15 +1,13 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
-import { sendDagligEmail } from "@/lib/email/daglig-email";
+import { sendDagligEmailToActiveUsers } from "@/lib/email/daglig-email";
 import { getCopenhagenHour } from "@/lib/minigame/copenhagen-date";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const RECIPIENT_EMAIL = "Arthur.toppenberg@gmail.com";
-const RECIPIENT_NAME = "Arthur";
 const SCHEDULED_COPENHAGEN_HOUR = 6;
 
 const isAuthorized = (request: Request, secret: string): boolean => {
@@ -50,20 +48,30 @@ export const POST = async (request: Request): Promise<NextResponse> => {
   }
 
   try {
-    await sendDagligEmail({ to: RECIPIENT_EMAIL, name: RECIPIENT_NAME });
+    const result = await sendDagligEmailToActiveUsers();
+
+    logger.info("Daglig", "Cron daily email batch finished", {
+      sent: result.sent,
+      failed: result.failed.length,
+    });
+
+    return NextResponse.json({
+      sent: result.sent,
+      failed: result.failed,
+    });
   } catch (error) {
-    logger.error("Daglig", "Cron daily email failed", {
-      email: RECIPIENT_EMAIL,
+    logger.error("Daglig", "Cron daily email batch failed", {
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Kunne ikke sende daglig e-mail." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Kunne ikke sende daglig e-mail.",
+      },
       { status: 500 },
     );
   }
-
-  logger.info("Daglig", "Cron daily email sent", { email: RECIPIENT_EMAIL });
-
-  return NextResponse.json({ sent: true });
 };
