@@ -186,174 +186,183 @@ export default async function Home() {
 
   return (
     <>
-      <div
+      <video
         aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-[url('/DJ.JPG')] bg-cover bg-fixed bg-center bg-no-repeat grayscale"
+        autoPlay
+        className="pointer-events-none fixed inset-0 -z-10 h-full w-full object-cover grayscale"
+        loop
+        muted
+        playsInline
+        preload="auto"
+        src="/IMG_4031.MOV"
       />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 -z-10 bg-background/80"
       />
       <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pt-8 pb-16">
-      <div className="mb-12">
-        <div className="mb-2 flex items-center justify-between gap-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Festivaltæller
+        <div className="mb-12">
+          <div className="mb-2 flex items-center justify-between gap-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Festivaltæller
+            </p>
+            {session ? (
+              <LogoutButton
+                email={session.email}
+                showAdminLink={session.role === "ADMIN"}
+              />
+            ) : (
+              <Link href="/login">
+                <Button size="sm" variant="outline">
+                  Log ind
+                </Button>
+              </Link>
+            )}
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {session?.name ? `Hej ${session.name} -  ` : ""}
+            Tidslinje 2026
+          </h1>
+          <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+            Fra Distortion Ø til Karrusel.
           </p>
-          {session ? (
-            <LogoutButton
-              email={session.email}
-              showAdminLink={session.role === "ADMIN"}
-            />
-          ) : (
-            <Link href="/login">
-              <Button size="sm" variant="outline">
-                Log ind
-              </Button>
-            </Link>
-          )}
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight">Tidslinje 2026</h1>
-        <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-          Følg festivalåret kronologisk — fra Distortion Ø til Karrusel.
-        </p>
-      </div>
 
-      {!events ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Databasen er ikke klar</CardTitle>
-            <CardDescription>
-              Kør{" "}
-              <code className="text-foreground">pnpm --filter @countdown/db db:migrate</code>, derefter{" "}
-              <code className="text-foreground">pnpm --filter @countdown/db db:seed</code>, og
-              genindlæs siden.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : events.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ingen begivenheder endnu</CardTitle>
-            <CardDescription>
-              Kør{" "}
-              <code className="text-foreground">pnpm --filter @countdown/db db:seed</code> for at
-              indlæse festivalerne i 2026.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="relative">
-          <div
-            className="absolute top-2 bottom-2 left-[0.6875rem] w-px bg-border"
-            aria-hidden
-          />
+        {!events ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Databasen er ikke klar</CardTitle>
+              <CardDescription>
+                Kør{" "}
+                <code className="text-foreground">pnpm --filter @countdown/db db:migrate</code>, derefter{" "}
+                <code className="text-foreground">pnpm --filter @countdown/db db:seed</code>, og
+                genindlæs siden.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : events.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Ingen begivenheder endnu</CardTitle>
+              <CardDescription>
+                Kør{" "}
+                <code className="text-foreground">pnpm --filter @countdown/db db:seed</code> for at
+                indlæse festivalerne i 2026.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <div className="relative">
+            <div
+              className="absolute top-2 bottom-2 left-[0.6875rem] w-px bg-border"
+              aria-hidden
+            />
 
-          <ol className="flex flex-col gap-10">
-            {buildTimelineItems(events, now).map((item, index, timelineItems) => {
-              const previousItem = index > 0 ? timelineItems[index - 1] : undefined;
-              const itemDate = getItemDate(item);
-              const showMonthHeader =
-                !previousItem ||
-                getMonthKey(getItemDate(previousItem)) !== getMonthKey(itemDate);
+            <ol className="flex flex-col gap-10">
+              {buildTimelineItems(events, now).map((item, index, timelineItems) => {
+                const previousItem = index > 0 ? timelineItems[index - 1] : undefined;
+                const itemDate = getItemDate(item);
+                const showMonthHeader =
+                  !previousItem ||
+                  getMonthKey(getItemDate(previousItem)) !== getMonthKey(itemDate);
 
-              if (item.kind === "today") {
+                if (item.kind === "today") {
+                  return (
+                    <li key="today" className="flex flex-col gap-6">
+                      {showMonthHeader ? (
+                        <div className="relative grid grid-cols-[1.375rem_1fr] items-center gap-x-5">
+                          <div className="flex justify-center">
+                            <span className="z-10 size-2 rounded-full bg-border" aria-hidden />
+                          </div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            {monthYearFormatter.format(item.date)}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <div className="relative grid grid-cols-[1.375rem_1fr] gap-x-5">
+                        <div className="flex justify-center pt-3">
+                          <span
+                            className="z-10 size-3 shrink-0 rounded-full bg-primary ring-4 ring-primary/25"
+                            aria-hidden
+                          />
+                        </div>
+
+                        <div className="relative min-w-0">
+                          <div
+                            className="absolute top-3 -left-5 h-px w-5 bg-primary/40"
+                            aria-hidden
+                          />
+                          <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 ring-1 ring-primary/20">
+                            <p className="text-sm font-medium">I dag</p>
+                            <time
+                              className="text-sm text-muted-foreground"
+                              dateTime={item.date.toISOString()}
+                            >
+                              {fullDateFormatter.format(item.date)}
+                            </time>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                }
+
+                const event = item.event;
+                const countdown = getEventCountdown(event.startDate, event.endDate, now);
+
                 return (
-                  <li key="today" className="flex flex-col gap-6">
+                  <li key={event.id} className="flex flex-col gap-6">
                     {showMonthHeader ? (
                       <div className="relative grid grid-cols-[1.375rem_1fr] items-center gap-x-5">
                         <div className="flex justify-center">
                           <span className="z-10 size-2 rounded-full bg-border" aria-hidden />
                         </div>
                         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                          {monthYearFormatter.format(item.date)}
+                          {monthYearFormatter.format(event.startDate)}
                         </p>
                       </div>
                     ) : null}
 
                     <div className="relative grid grid-cols-[1.375rem_1fr] gap-x-5">
-                      <div className="flex justify-center pt-3">
+                      <div className="flex justify-center pt-5">
                         <span
-                          className="z-10 size-3 shrink-0 rounded-full bg-primary ring-4 ring-primary/25"
+                          className={`z-10 size-2.5 shrink-0 rounded-full ${statusDotClassName(countdown.status)}`}
                           aria-hidden
                         />
                       </div>
 
                       <div className="relative min-w-0">
                         <div
-                          className="absolute top-3 -left-5 h-px w-5 bg-primary/40"
+                          className="absolute top-[1.375rem] -left-5 h-px w-5 bg-border"
                           aria-hidden
                         />
-                        <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 ring-1 ring-primary/20">
-                          <p className="text-sm font-medium">I dag</p>
-                          <time
-                            className="text-sm text-muted-foreground"
-                            dateTime={item.date.toISOString()}
-                          >
-                            {fullDateFormatter.format(item.date)}
-                          </time>
-                        </div>
+                        <Card className={statusCardClassName(countdown.status)}>
+                          <CardHeader>
+                            <CardTitle>{event.name}</CardTitle>
+                            <CardDescription className="mt-1">
+                              <time dateTime={event.startDate.toISOString()}>
+                                {formatDateRange(event.startDate, event.endDate)}
+                              </time>
+                              {event.description ? (
+                                <span className="mt-1.5 block">{event.description}</span>
+                              ) : null}
+                            </CardDescription>
+                            <CardAction>
+                              <Badge variant={statusVariant(countdown.status)}>
+                                {countdown.label}
+                              </Badge>
+                            </CardAction>
+                          </CardHeader>
+                        </Card>
                       </div>
                     </div>
                   </li>
                 );
-              }
-
-              const event = item.event;
-              const countdown = getEventCountdown(event.startDate, event.endDate, now);
-
-              return (
-                <li key={event.id} className="flex flex-col gap-6">
-                  {showMonthHeader ? (
-                    <div className="relative grid grid-cols-[1.375rem_1fr] items-center gap-x-5">
-                      <div className="flex justify-center">
-                        <span className="z-10 size-2 rounded-full bg-border" aria-hidden />
-                      </div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        {monthYearFormatter.format(event.startDate)}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div className="relative grid grid-cols-[1.375rem_1fr] gap-x-5">
-                    <div className="flex justify-center pt-5">
-                      <span
-                        className={`z-10 size-2.5 shrink-0 rounded-full ${statusDotClassName(countdown.status)}`}
-                        aria-hidden
-                      />
-                    </div>
-
-                    <div className="relative min-w-0">
-                      <div
-                        className="absolute top-[1.375rem] -left-5 h-px w-5 bg-border"
-                        aria-hidden
-                      />
-                      <Card className={statusCardClassName(countdown.status)}>
-                        <CardHeader>
-                          <CardTitle>{event.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            <time dateTime={event.startDate.toISOString()}>
-                              {formatDateRange(event.startDate, event.endDate)}
-                            </time>
-                            {event.description ? (
-                              <span className="mt-1.5 block">{event.description}</span>
-                            ) : null}
-                          </CardDescription>
-                          <CardAction>
-                            <Badge variant={statusVariant(countdown.status)}>
-                              {countdown.label}
-                            </Badge>
-                          </CardAction>
-                        </CardHeader>
-                      </Card>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
+              })}
+            </ol>
+          </div>
+        )}
       </main>
     </>
   );

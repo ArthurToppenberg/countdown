@@ -6,6 +6,7 @@ export const AUTH_COOKIE_NAME = "auth-token";
 export type AuthTokenPayload = {
   userId: string;
   email: string;
+  name: string | null;
   role: "ADMIN" | "USER";
 };
 
@@ -26,6 +27,7 @@ export const signAuthToken = async (
 
   return new SignJWT({
     email: payload.email,
+    name: payload.name,
     role: payload.role,
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -43,6 +45,7 @@ export const verifyAuthToken = async (
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.sub;
     const email = payload.email;
+    const name = payload.name;
     const role = payload.role;
 
     if (
@@ -56,6 +59,7 @@ export const verifyAuthToken = async (
     return {
       userId,
       email,
+      name: typeof name === "string" ? name : null,
       role,
     };
   } catch {

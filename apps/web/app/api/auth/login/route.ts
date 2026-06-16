@@ -27,6 +27,7 @@ export const POST = async (request: Request): Promise<NextResponse> => {
     select: {
       id: true,
       email: true,
+      name: true,
       role: true,
       password: true,
     },
@@ -51,6 +52,7 @@ export const POST = async (request: Request): Promise<NextResponse> => {
   const token = await signAuthToken({
     userId: user.id,
     email: user.email,
+    name: user.name,
     role: user.role,
   });
 
