@@ -9,7 +9,7 @@
     "lint": "eslint",
     "check-types": "tsc --noEmit",
     "clean": "rimraf .next",
-    "send-daglig-email": "tsx scripts/send-scheduled-daglig-email.ts"
+    "send-daglig-email": "tsx --import ./scripts/react-global.ts scripts/send-scheduled-daglig-email.ts"
   },
   "dependencies": {
     "@countdown/db": "workspace:*",
