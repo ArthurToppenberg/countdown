@@ -5,7 +5,8 @@
     "JWT_SECRET",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
-    "APP_URL"
+    "APP_URL",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {
