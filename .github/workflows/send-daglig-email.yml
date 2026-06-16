@@ -1,0 +1,45 @@
+name: Send daglig email
+
+on:
+  schedule:
+    # 04:00 and 05:00 UTC cover 06:00 Copenhagen in CEST and CET; the script skips the wrong hour.
+    - cron: "0 4,5 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Send even if it is not 6 AM Copenhagen time
+        type: boolean
+        default: false
+
+jobs:
+  send-daglig-email:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
+      APP_URL: ${{ vars.APP_URL }}
+      FORCE_SEND: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @countdown/db db:generate
+
+      - name: Send daglig email
+        run: pnpm --filter web send-daglig-email
