@@ -218,16 +218,16 @@ export const CrossTheVodkaRedbullGame = ({
             <LaneRow
               crashLane={state.crashLane}
               currentLane={state.lane}
-              isPlaying={isPlaying}
               key={lane}
               lane={lane}
+              phase={state.phase}
             />
           ))}
           <LaneRow
             crashLane={state.crashLane}
             currentLane={state.lane}
-            isPlaying={isPlaying}
             lane={0}
+            phase={state.phase}
             safetyZone
           />
         </div>
@@ -472,7 +472,7 @@ const CompactStat = ({
 type LaneRowProps = {
   lane: number;
   currentLane: number;
-  isPlaying: boolean;
+  phase: CrossTheVodkaRedbullPublicState["phase"];
   crashLane: number | null;
   safetyZone?: boolean;
 };
@@ -480,17 +480,17 @@ type LaneRowProps = {
 const LaneRow = ({
   lane,
   currentLane,
-  isPlaying,
+  phase,
   crashLane,
   safetyZone = false,
 }: LaneRowProps) => {
   const isCrash = crashLane === lane;
-  const isActive = isPlaying && currentLane === lane;
+  const isPlayerHere = currentLane === lane && phase !== "ended";
   const isDone = currentLane > lane;
 
   const laneClassName = isCrash
     ? "border-red-400/55 bg-gradient-to-r from-red-500/25 to-red-950/55"
-    : isActive
+    : isPlayerHere
       ? "border-blue-400/45 bg-gradient-to-r from-blue-500/18 to-[#243044] shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)]"
       : isDone
         ? "border-green-500/35 bg-gradient-to-r from-green-500/18 to-[#14532d]"
@@ -572,7 +572,7 @@ const LaneRow = ({
           <span className="ctv-pop relative z-[3] text-base leading-none md:text-2xl">
             💥
           </span>
-        ) : isActive ? (
+        ) : isPlayerHere ? (
           <span className="ctv-bounce text-base leading-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] md:text-2xl">
             🥤
           </span>
