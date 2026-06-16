@@ -335,7 +335,13 @@ export const UsersManager = ({ users }: UsersManagerProps) => {
                           <Button
                             size="sm"
                             onClick={() => handleSave(user)}
-                            disabled={!dirty || isSaving || isDeleting || isResetting}
+                            disabled={
+                              !dirty ||
+                              !rowState.name.trim() ||
+                              isSaving ||
+                              isDeleting ||
+                              isResetting
+                            }
                           >
                             <CheckIcon />
                             {isSaving ? "Gemmer..." : "Gem"}
@@ -344,7 +350,12 @@ export const UsersManager = ({ users }: UsersManagerProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleResetPassword(user)}
-                            disabled={isSaving || isDeleting || isResetting}
+                            disabled={
+                              !user.name?.trim() ||
+                              isSaving ||
+                              isDeleting ||
+                              isResetting
+                            }
                             aria-label={`Nulstil adgangskode for ${user.email}`}
                           >
                             <KeyRoundIcon />
@@ -429,7 +440,8 @@ export const UsersManager = ({ users }: UsersManagerProps) => {
                     name: changeEvent.target.value,
                   }))
                 }
-                placeholder="Valgfrit"
+                placeholder="Fornavn"
+                required
               />
             </div>
 
@@ -467,7 +479,11 @@ export const UsersManager = ({ users }: UsersManagerProps) => {
             >
               Annuller
             </Button>
-            <Button type="submit" form="user-create-form" disabled={isCreating}>
+            <Button
+              type="submit"
+              form="user-create-form"
+              disabled={isCreating || !createFormState.name.trim()}
+            >
               {isCreating ? "Opretter..." : "Opret bruger"}
             </Button>
           </SheetFooter>

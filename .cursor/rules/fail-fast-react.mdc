@@ -1,0 +1,32 @@
+---
+description: Fail fast i React og React Email — ingen fallbacks for påkrævede props
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Fail fast — ingen meningsløse fallbacks
+
+Læs **`apps/web/LLM-FAIL-FAST.md`** (se også `.cursor/rules/project-guides.mdc`).
+
+## Regel
+
+Manglende forretningsdata er en fejl. Kast `Error` ved grænsen (send-funktion, server action, API) — ikke i præsentationskomponenter.
+
+## Gør ikke
+
+- `name: string | null` på e-mail-props der kræver navn
+- `name ? "Hej ${name}" : "Hej"` eller alternative copy-tekster i skabeloner
+- `?? ""`, `|| "—"`, ternaries i `emails/` og transaktionelle komponenter
+- `defaultProps` eller implicitte defaults på påkrævede felter
+
+## Gør
+
+- Påkrævede props som `string` (ikke nullable) i typer og skabeloner
+- Validér i `lib/email/*` og server actions før `render` / `sendReactEmail`
+- Brug `requireUserName()` fra `lib/email/require-user-name.ts`
+- Én code path i React Email — antag gyldige props
+- Disable send-knap i UI når data mangler; server validerer stadig
+
+## Fallbacks er OK kun for
+
+Ægte valgfrie felter, søgning (`?? ""` i filter), formular-startværdier, empty states.

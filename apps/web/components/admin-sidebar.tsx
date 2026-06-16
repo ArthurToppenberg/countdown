@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDaysIcon,
+  Gamepad2Icon,
   HomeIcon,
+  SparklesIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -34,9 +36,22 @@ const adminNavItems: AdminNavItem[] = [
     icon: CalendarDaysIcon,
   },
   {
+    title: "Daglig",
+    href: "/admin/daglig",
+    icon: SparklesIcon,
+  },
+  {
     title: "Brugere",
     href: "/admin/brugere",
     icon: UsersIcon,
+  },
+];
+
+const gamesNavItems: AdminNavItem[] = [
+  {
+    title: "Games",
+    href: "/admin/games",
+    icon: Gamepad2Icon,
   },
 ];
 
@@ -73,6 +88,26 @@ export const AdminSidebar = ({ email }: AdminSidebarProps) => {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    isActive={pathname === item.href}
+                    tooltip={item.title}
+                    render={<Link href={item.href} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Games</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {gamesNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}

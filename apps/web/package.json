@@ -13,6 +13,8 @@
   "dependencies": {
     "@countdown/db": "workspace:*",
     "@countdown/ui": "workspace:*",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.9",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
     "lucide-react": "^1.18.0",

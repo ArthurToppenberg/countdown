@@ -3,12 +3,13 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { PrismaClient } from "./generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { normalizeDatabaseUrl } from "./normalize-database-url";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(moduleDir, "../.env"), quiet: true });
 
 const rawDatabaseUrl = process.env.DATABASE_URL;
-const databaseUrl = (rawDatabaseUrl ?? "").trim();
+const databaseUrl = normalizeDatabaseUrl((rawDatabaseUrl ?? "").trim());
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required");
 }

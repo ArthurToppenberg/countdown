@@ -12,3 +12,5 @@ const getAppUrl = (): string => {
 
 export const buildSetPasswordUrl = (token: string): string =>
   `${getAppUrl()}/set-password?token=${encodeURIComponent(token)}`;
+
+export const buildGameUrl = (): string => `${getAppUrl()}/game`;

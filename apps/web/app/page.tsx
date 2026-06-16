@@ -2,6 +2,10 @@ import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
 import { getSession } from "@/lib/auth";
+import {
+  type EventStatus,
+  getEventCountdown,
+} from "@/lib/event-countdown";
 import prisma from "@/lib/prisma";
 import { Badge } from "@countdown/ui/components/badge";
 import { Button } from "@countdown/ui/components/button";
@@ -12,13 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@countdown/ui/components/card";
-
-type EventStatus = "upcoming" | "live" | "past";
-
-type EventCountdown = {
-  status: EventStatus;
-  label: string;
-};
 
 type FestivalEvent = {
   id: string;
@@ -105,36 +102,6 @@ const formatDateRange = (startDate: Date, endDate: Date): string => {
   }
 
   return `${fullDateFormatter.format(startDate)} – ${fullDateFormatter.format(endDate)}`;
-};
-
-const getEventCountdown = (
-  startDate: Date,
-  endDate: Date,
-  now: Date,
-): EventCountdown => {
-  if (now > endDate) {
-    return { status: "past", label: "Afsluttet" };
-  }
-
-  if (now >= startDate) {
-    return { status: "live", label: "Live nu" };
-  }
-
-  const diffMs = startDate.getTime() - now.getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-  if (days > 0) {
-    return {
-      status: "upcoming",
-      label: days === 1 ? `${days} dag` : `${days} dage`,
-    };
-  }
-
-  return {
-    status: "upcoming",
-    label: hours === 1 ? `${hours} time` : `${hours} timer`,
-  };
 };
 
 const statusVariant = (status: EventStatus): "default" | "secondary" | "outline" => {

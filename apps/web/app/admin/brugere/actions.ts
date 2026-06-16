@@ -170,6 +170,13 @@ export const resetUserPassword = async (id: string): Promise<ActionResult> => {
     return { success: false, error: "Brugeren findes ikke." };
   }
 
+  if (!user.name?.trim()) {
+    return {
+      success: false,
+      error: "Bruger mangler navn — kan ikke sende nulstillings-e-mail.",
+    };
+  }
+
   const { token, tokenHash, expiresAt } = generatePasswordResetToken();
 
   try {

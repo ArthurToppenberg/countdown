@@ -1,0 +1,18 @@
+---
+description: Obligatoriske projektguider — læs før du koder
+alwaysApply: true
+---
+
+# Læs disse filer før du koder
+
+## Web, React og e-mail
+
+Læs **`apps/web/LLM-FAIL-FAST.md`** før du skriver eller ændrer React-komponenter, React Email-skabeloner, server actions eller e-mail-afsendelse.
+
+Kort: ingen fallbacks for påkrævede props. Validér ved grænsen og kast `Error` — ikke i præsentationskomponenter.
+
+## Database og Prisma
+
+Læs **`packages/db/README.md`** før du rører databasen, schema eller migrationer.
+
+Kort: ændr kun `schema.prisma`, kør `pnpm --filter @countdown/db db:migrate`, commit autogenererede migrationsfiler. Opret aldrig `migration.sql` manuelt.

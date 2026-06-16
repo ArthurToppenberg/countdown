@@ -10,7 +10,7 @@ export type UserFormInput = {
 
 export type UserFormValues = {
   email: string;
-  name: string | null;
+  name: string;
   role: UserRole;
 };
 
@@ -30,6 +30,10 @@ export const parseUserForm = (input: UserFormInput): UserValidationResult => {
     return { success: false, error: "Angiv en gyldig e-mailadresse." };
   }
 
+  if (!name) {
+    return { success: false, error: "Navn er påkrævet." };
+  }
+
   if (input.role !== "ADMIN" && input.role !== "USER") {
     return { success: false, error: "Ugyldig rolle." };
   }
@@ -38,7 +42,7 @@ export const parseUserForm = (input: UserFormInput): UserValidationResult => {
     success: true,
     data: {
       email,
-      name: name.length > 0 ? name : null,
+      name,
       role: input.role,
     },
   };

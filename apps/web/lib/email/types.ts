@@ -1,8 +1,10 @@
 export type SetPasswordEmailInput = {
   to: string;
-  name: string | null;
+  name: string;
   setPasswordUrl: string;
 };
 
-export const formatEmailGreeting = (name: string | null): string =>
-  name ? `Hej ${name}` : "Hej";
+export type DagligEmailInput = {
+  to: string;
+  name: string;
+};
