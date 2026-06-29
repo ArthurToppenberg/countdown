@@ -1,22 +1,19 @@
-import {
-  CROSS_THE_VODKA_REDBULL_ID,
-  type CrossTheVodkaRedbullActions,
-} from "@countdown/minigame";
+import { TOWER_STACK_ID, type TowerStackActions } from "@countdown/minigame";
 
 import {
-  cashOutCompetitiveCrossTheVodkaRedbull,
-  competitiveResetNotAllowed,
-  takeCompetitiveCrossTheVodkaRedbullStep,
-} from "./competitive-cross-the-vodka-redbull-actions";
+  competitiveResetNotAllowed as towerStackCompetitiveResetNotAllowed,
+  dropCompetitiveTowerStackBlock,
+  settleCompetitiveTowerStackBlock,
+} from "./competitive-tower-stack-actions";
 
 export const getCompetitiveMinigameActions = (
   gameId: string,
-): CrossTheVodkaRedbullActions | null => {
-  if (gameId === CROSS_THE_VODKA_REDBULL_ID) {
+): TowerStackActions | null => {
+  if (gameId === TOWER_STACK_ID) {
     return {
-      takeStep: takeCompetitiveCrossTheVodkaRedbullStep,
-      cashOut: cashOutCompetitiveCrossTheVodkaRedbull,
-      reset: competitiveResetNotAllowed,
+      dropBlock: dropCompetitiveTowerStackBlock,
+      settleBlock: settleCompetitiveTowerStackBlock,
+      reset: towerStackCompetitiveResetNotAllowed,
     };
   }
 

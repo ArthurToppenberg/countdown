@@ -6,26 +6,28 @@ Shared minigame definitions, server-side game logic, and React UI for Countdown.
 
 - **React UI** — client components render the game board
 - **Server actions** — all game state changes run on the server
-- **Signed httpOnly cookie** — crash map, bankroll, and round state are stored server-side in a JWT cookie (no DB, no user data)
+- **Signed httpOnly cookie** — game session state is stored server-side in a JWT cookie (no DB during play)
 
-This prevents clients from tampering with crash outcomes or bankroll values.
+**The client cannot be trusted.** Block positions, overlap checks, scoring, and attempt limits are computed in server actions and pure logic (`logic.ts`). The UI only sends player intents (e.g. "drop block") and animates the last known server state — it never decides whether a placement succeeded or how many points to award.
+
+This prevents clients from tampering with outcomes, scores, or remaining attempts.
 
 ## Usage
 
 ```tsx
 import {
-  CrossTheVodkaRedbullGame,
-  getCrossTheVodkaRedbullState,
-} from "@countdown/minigame/games/cross-the-vodka-redbull";
+  TowerStackGame,
+  getTowerStackState,
+} from "@countdown/minigame/games/tower-stack";
 
-const initialState = await getCrossTheVodkaRedbullState();
+const initialState = await getTowerStackState();
 
-return <CrossTheVodkaRedbullGame initialState={initialState} />;
+return <TowerStackGame initialState={initialState} />;
 ```
 
 ## Playing games
 
-Each game is playable at `/game/[game-id]` (for example `/game/cross-the-vodka-redbull`). Register new games in `src/registry.ts`.
+Each game is playable at `/game/[game-id]` (for example `/game/tower-stack`). Register new games in `src/registry.ts`.
 
 ## Activating games
 
@@ -39,13 +41,14 @@ Each Copenhagen calendar day, one active game is picked deterministically and st
 
 ## Adding a new game
 
-1. Create `src/games/your-game/` with:
-   - `logic.ts` — pure game rules
-   - `types.ts` — session + public state types
-   - `actions.ts` — `"use server"` actions using `session/game-session.ts`
-   - `your-game.tsx` — client React UI
+See **`LLM-GAME-GUIDE.md`** for the full LLM-oriented guide (architecture, file structure, registration checklist, competitive mode).
+
+Quick version:
+
+1. Create `src/games/your-game/` following `tower-stack/` as reference
 2. Register the game in `src/registry.ts`
 3. Add an entry to `games.manifest.json` (use `"active": false` until the game is ready)
+4. Wire up `minigame-player.tsx`, exports, and competitive wrappers in `apps/web/lib/minigame/`
 
 ## Environment
 

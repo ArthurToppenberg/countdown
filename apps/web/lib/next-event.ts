@@ -11,8 +11,8 @@ export const getNextEvent = async (): Promise<NextEventInfo | undefined> => {
   const event = await prisma.event
     .findFirst({
       where: {
-        endDate: {
-          gte: now,
+        startDate: {
+          gt: now,
         },
       },
       orderBy: {

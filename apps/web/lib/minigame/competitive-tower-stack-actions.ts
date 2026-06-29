@@ -1,12 +1,12 @@
 "use server";
 
 import {
-  CROSS_THE_VODKA_REDBULL_ID,
-  cashOutCrossTheVodkaRedbull,
-  clearCrossTheVodkaRedbullSession,
-  takeCrossTheVodkaRedbullStep,
-  type CrossTheVodkaRedbullActionResult,
-  type CrossTheVodkaRedbullPublicState,
+  clearTowerStackSession,
+  dropTowerStackBlock,
+  settleTowerStackBlock,
+  TOWER_STACK_ID,
+  type TowerStackActionResult,
+  type TowerStackPublicState,
 } from "@countdown/minigame";
 
 import { assertNoActiveEventForMinigame } from "@/lib/active-event";
@@ -38,7 +38,7 @@ const requirePlayableSession = async (): Promise<{
 
   const todaysRound = await getOrCreateTodaysDailyMinigame();
 
-  if (todaysRound.gameId !== CROSS_THE_VODKA_REDBULL_ID) {
+  if (todaysRound.gameId !== TOWER_STACK_ID) {
     throw new Error("Dagens minigame er et andet spil.");
   }
 
@@ -51,38 +51,36 @@ const requirePlayableSession = async (): Promise<{
 const persistScoreIfEnded = async (
   userId: string,
   dailyMinigameId: string,
-  state: CrossTheVodkaRedbullPublicState,
+  state: TowerStackPublicState,
 ): Promise<void> => {
   if (state.phase !== "ended") {
     return;
   }
 
-  await saveMinigamePoints(userId, dailyMinigameId, state.bankroll);
-  await clearCrossTheVodkaRedbullSession("competitive");
+  await saveMinigamePoints(userId, dailyMinigameId, state.totalScore);
+  await clearTowerStackSession("competitive");
 };
 
 const withCompetitiveGuards = async (
-  action: () => Promise<CrossTheVodkaRedbullActionResult>,
-): Promise<CrossTheVodkaRedbullActionResult> => {
+  action: () => Promise<TowerStackActionResult>,
+): Promise<TowerStackActionResult> => {
   const { userId, dailyMinigameId } = await requirePlayableSession();
   const result = await action();
   await persistScoreIfEnded(userId, dailyMinigameId, result.state);
   return result;
 };
 
-export const takeCompetitiveCrossTheVodkaRedbullStep =
-  async (): Promise<CrossTheVodkaRedbullActionResult> =>
-    withCompetitiveGuards(() => takeCrossTheVodkaRedbullStep("competitive"));
+export const dropCompetitiveTowerStackBlock =
+  async (): Promise<TowerStackActionResult> =>
+    withCompetitiveGuards(() => dropTowerStackBlock("competitive"));
 
-export const cashOutCompetitiveCrossTheVodkaRedbull =
-  async (): Promise<CrossTheVodkaRedbullActionResult> =>
-    withCompetitiveGuards(() => cashOutCrossTheVodkaRedbull("competitive"));
+export const settleCompetitiveTowerStackBlock =
+  async (): Promise<TowerStackActionResult> =>
+    withCompetitiveGuards(() => settleTowerStackBlock("competitive"));
 
 const competitiveResetNotAllowed =
-  async (): Promise<CrossTheVodkaRedbullActionResult> => {
+  async (): Promise<TowerStackActionResult> => {
     throw new Error("Dagens minigame kan ikke nulstilles.");
   };
 
-export {
-  competitiveResetNotAllowed,
-};
+export { competitiveResetNotAllowed };

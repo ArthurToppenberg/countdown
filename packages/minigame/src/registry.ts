@@ -1,10 +1,10 @@
 import "server-only";
 
 import {
-  CROSS_THE_VODKA_REDBULL_ID,
-  crossTheVodkaRedbull,
-  getCrossTheVodkaRedbullState,
-} from "./games/cross-the-vodka-redbull";
+  getTowerStackState,
+  TOWER_STACK_ID,
+  towerStack,
+} from "./games/tower-stack";
 import {
   assertManifestCoversRegisteredGames,
   isMinigameActive,
@@ -19,10 +19,10 @@ export type MinigameRegistryEntry = {
 };
 
 const minigameRegistry: Record<string, MinigameRegistryEntry> = {
-  [CROSS_THE_VODKA_REDBULL_ID]: {
-    id: CROSS_THE_VODKA_REDBULL_ID,
-    title: crossTheVodkaRedbull.title,
-    getInitialState: (mode = "practice") => getCrossTheVodkaRedbullState(mode),
+  [TOWER_STACK_ID]: {
+    id: TOWER_STACK_ID,
+    title: towerStack.title,
+    getInitialState: (mode = "practice") => getTowerStackState(mode),
   },
 };
 
@@ -53,3 +53,16 @@ export const listMinigames = (): MinigameRegistryEntry[] =>
 export const minigameIds = (): string[] => listActiveMinigameIds(registeredMinigameIds);
 
 export const registeredMinigameIdsList = (): string[] => registeredMinigameIds;
+
+export type MinigameManifestStatus = {
+  id: string;
+  title: string;
+  active: boolean;
+};
+
+export const listRegisteredMinigamesWithStatus = (): MinigameManifestStatus[] =>
+  listRegisteredMinigames().map((game) => ({
+    id: game.id,
+    title: game.title,
+    active: isMinigameActive(game.id),
+  }));

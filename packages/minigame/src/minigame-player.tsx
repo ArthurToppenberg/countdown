@@ -1,8 +1,8 @@
 "use client";
 
-import { CrossTheVodkaRedbullGame } from "./games/cross-the-vodka-redbull/cross-the-vodka-redbull-game";
-import { CROSS_THE_VODKA_REDBULL_ID } from "./games/cross-the-vodka-redbull/cross-the-vodka-redbull-metadata";
-import type { CrossTheVodkaRedbullActions } from "./games/cross-the-vodka-redbull/types";
+import { TowerStackGame } from "./games/tower-stack/tower-stack-game";
+import { TOWER_STACK_ID } from "./games/tower-stack/tower-stack-metadata";
+import type { TowerStackActions } from "./games/tower-stack/types";
 import type { MinigamePlayMode } from "./types";
 
 type MinigamePlayerProps = {
@@ -10,7 +10,7 @@ type MinigamePlayerProps = {
   initialState: unknown;
   variant?: "standalone" | "embedded";
   mode?: MinigamePlayMode;
-  actions?: CrossTheVodkaRedbullActions;
+  actions?: TowerStackActions;
 };
 
 export const MinigamePlayer = ({
@@ -20,12 +20,12 @@ export const MinigamePlayer = ({
   mode = "practice",
   actions,
 }: MinigamePlayerProps) => {
-  if (gameId === CROSS_THE_VODKA_REDBULL_ID) {
+  if (gameId === TOWER_STACK_ID) {
     return (
-      <CrossTheVodkaRedbullGame
-        actions={actions}
+      <TowerStackGame
+        actions={actions as TowerStackActions | undefined}
         initialState={initialState as Parameters<
-          typeof CrossTheVodkaRedbullGame
+          typeof TowerStackGame
         >[0]["initialState"]}
         mode={mode}
         variant={variant}

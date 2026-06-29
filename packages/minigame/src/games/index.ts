@@ -1,4 +1,1 @@
-export {
-  CROSS_THE_VODKA_REDBULL_ID,
-  crossTheVodkaRedbull,
-} from "./cross-the-vodka-redbull";
+export { TOWER_STACK_ID, towerStack } from "./tower-stack";

@@ -5,7 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./minigame.css": "./src/minigame.css",
-    "./games/cross-the-vodka-redbull": "./src/games/cross-the-vodka-redbull/index.ts"
+    "./games/tower-stack": "./src/games/tower-stack/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

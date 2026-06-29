@@ -16,3 +16,9 @@ Kort: ingen fallbacks for påkrævede props. Validér ved grænsen og kast `Erro
 Læs **`packages/db/README.md`** før du rører databasen, schema eller migrationer.
 
 Kort: ændr kun `schema.prisma`. Kør **aldrig** migrationer — det er udviklerens ansvar (`pnpm --filter @countdown/db db:migrate`). Opret aldrig `migration.sql` manuelt.
+
+## Minigames
+
+Læs **`packages/minigame/LLM-GAME-GUIDE.md`** før du opretter, ændrer eller registrerer et minigame.
+
+Kort: spilregler i pure `logic.ts`, state via server actions + signed cookie, referenceimplementering i `tower-stack/`.

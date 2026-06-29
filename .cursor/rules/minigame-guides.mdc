@@ -1,0 +1,16 @@
+---
+description: Minigame-arkitektur — læs før du opretter eller ændrer spil
+globs: packages/minigame/**/*
+alwaysApply: false
+---
+
+# Minigames
+
+Læs **`packages/minigame/LLM-GAME-GUIDE.md`** før du opretter, ændrer eller registrerer et minigame.
+
+Kort:
+
+- Spilregler i `logic.ts` (pure). State-ændringer i `actions.ts` (server). UI i `*-game.tsx` (client).
+- Hemmelig state i JWT cookie — aldrig i public state eller klienten.
+- Reference: `src/games/tower-stack/`
+- Nyt spil kræver: game-mappe, `registry.ts`, `games.manifest.json`, `minigame-player.tsx`, exports, og evt. competitive wrappers i `apps/web/lib/minigame/`.

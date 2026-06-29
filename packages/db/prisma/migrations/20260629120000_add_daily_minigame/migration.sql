@@ -14,7 +14,7 @@ ALTER TABLE "Minigame" ADD COLUMN "dailyMinigameId" TEXT;
 INSERT INTO "DailyMinigame" ("copenhagenDateKey", "gameId", "createdAt")
 SELECT DISTINCT
     to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen', 'YYYY-MM-DD'),
-    'cross-the-vodka-redbull',
+    'tower-stack',
     CURRENT_TIMESTAMP
 FROM "Minigame"
 ON CONFLICT ("copenhagenDateKey") DO NOTHING;
