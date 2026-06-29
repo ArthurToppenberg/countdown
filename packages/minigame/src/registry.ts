@@ -22,7 +22,7 @@ const minigameRegistry: Record<string, MinigameRegistryEntry> = {
   [TOWER_STACK_ID]: {
     id: TOWER_STACK_ID,
     title: towerStack.title,
-    getInitialState: (mode = "practice") => getTowerStackState(mode),
+    getInitialState: () => getTowerStackState(),
   },
 };
 

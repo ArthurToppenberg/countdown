@@ -1,3 +1,4 @@
+export { isEmailEnabled } from "./email-manifest";
 export { buildSetPasswordUrl, buildGameUrl } from "./urls";
 export { requireUserName } from "./require-user-name";
 export {

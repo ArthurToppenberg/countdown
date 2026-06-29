@@ -7,7 +7,7 @@ export const TOWER_STACK_COPY = {
     `${remaining}/${TOWER_STACK_MAX_ATTEMPTS} tilbage`,
   howToPlayTitle: "Sådan spiller du",
   howToPlay:
-    "Start tårnet og sigt med den bevægelige blok. Tryk igen for at slippe den ned. Rammer du skævt, skæres blokken til — misser du helt, er forsøget slut. Kameraet følger tårnet opad, og blokke der forsvinder under kanten forsvinder fra spillet. Byg hurtigt nok, ellers mister du fundamentet. Hver vellykket blok giver 1 point.",
+    "Byg tårnet ved at placere blokke præcist før de skæres til eller forsvinder i bunden, mens kameraet stiger.",
   gotIt: "Forstået",
   statAttempts: "Forsøg",
   statTotal: "Point",

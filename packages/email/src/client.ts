@@ -1,6 +1,7 @@
 import { type ReactElement } from "react";
 import { Resend } from "resend";
 
+import { isEmailEnabled } from "./email-manifest";
 import { logger } from "./logger";
 
 type SendReactEmailInput = {
@@ -47,14 +48,20 @@ const getFromEmail = (): string => {
 export const sendReactEmail = async (
   input: SendReactEmailInput,
 ): Promise<void> => {
-  const from = getFromEmail();
-  const resend = getResendClient();
   const logContext = {
     to: input.to,
     subject: input.subject,
-    from,
     ...(input.emailType !== undefined && { emailType: input.emailType }),
   };
+
+  if (!isEmailEnabled()) {
+    logger.info("Email", "Email skipped — emails disabled in manifest", logContext);
+    return;
+  }
+
+  const from = getFromEmail();
+  const resend = getResendClient();
+  const sendLogContext = { ...logContext, from };
 
   const result = await resend.emails
     .send({
@@ -65,7 +72,7 @@ export const sendReactEmail = async (
     })
     .catch((error: unknown) => {
       logger.error("Email", "Resend request failed", {
-        ...logContext,
+        ...sendLogContext,
         errorName: error instanceof Error ? error.name : "UnknownError",
         errorMessage: error instanceof Error ? error.message : String(error),
       });
@@ -76,14 +83,14 @@ export const sendReactEmail = async (
 
   if (error) {
     logger.error("Email", "Resend API rejected email", {
-      ...logContext,
+      ...sendLogContext,
       ...getResendErrorMeta(error),
     });
     throw new Error(error.message);
   }
 
   logger.info("Email", "Email sent successfully", {
-    ...logContext,
+    ...sendLogContext,
     messageId: data?.id,
   });
 };

@@ -4,13 +4,15 @@ Shared minigame definitions, server-side game logic, and React UI for Countdown.
 
 ## Architecture
 
-- **React UI** — client components render the game board
-- **Server actions** — all game state changes run on the server
-- **Signed httpOnly cookie** — game session state is stored server-side in a JWT cookie (no DB during play)
+- **Pure logic** (`logic.ts`) — deterministic, framework-free game rules (oscillation, fall, collision, camera, kill zone, scoring, attempts). Shared by client and server.
+- **Client engine** (`use-tower-stack-engine.ts`) — runs the entire simulation locally in a single `requestAnimationFrame` loop. There are **no server round-trips during play**, so gameplay never waits on the network.
+- **One submission at the end** — when the game ends, the client posts `{ score, replay }` to a per-mode submit action.
 
-**The client cannot be trusted.** Block positions, overlap checks, scoring, and attempt limits are computed in server actions and pure logic (`logic.ts`). The UI only sends player intents (e.g. "drop block") and animates the last known server state — it never decides whether a placement succeeded or how many points to award.
+### Trust model
 
-This prevents clients from tampering with outcomes, scores, or remaining attempts.
+Play is client-driven for a smooth experience, but the result is meant to be **server-verifiable**. The `replay` is a deterministic input log (per attempt: each block's locked x-position and the millisecond it was locked). Because the server has the same pure `logic.ts`, it can re-simulate the inputs and recompute the authoritative score, then reject mismatches.
+
+> Current status: server-side replay verification is **not yet implemented** — the submit action trusts the client `score` (see the `TODO` in `apps/web/lib/minigame/competitive-tower-stack-actions.ts`). Competitive double-submits are still blocked by the unique `(dailyMinigameId, userId)` constraint.
 
 ## Usage
 
@@ -41,15 +43,11 @@ Each Copenhagen calendar day, one active game is picked deterministically and st
 
 ## Adding a new game
 
-See **`LLM-GAME-GUIDE.md`** for the full LLM-oriented guide (architecture, file structure, registration checklist, competitive mode).
+Use `tower-stack/` as the reference implementation.
 
 Quick version:
 
-1. Create `src/games/your-game/` following `tower-stack/` as reference
+1. Create `src/games/your-game/` following `tower-stack/` (pure `logic.ts`, a client engine hook, the game component, `actions.ts` for the initial state)
 2. Register the game in `src/registry.ts`
 3. Add an entry to `games.manifest.json` (use `"active": false` until the game is ready)
 4. Wire up `minigame-player.tsx`, exports, and competitive wrappers in `apps/web/lib/minigame/`
-
-## Environment
-
-Uses `JWT_SECRET` (same as auth) to sign game session cookies.

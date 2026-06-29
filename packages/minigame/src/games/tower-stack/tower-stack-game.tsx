@@ -1,31 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import type { MinigamePlayMode } from "../../types";
-import {
-  dropTowerStackBlock,
-  resetTowerStack,
-  settleTowerStackBlock,
-  tickTowerStack,
-} from "./actions";
 import { TOWER_STACK_COPY } from "./copy";
-import {
-  getFallingBlockCenterY,
-  getOscillatingCenter,
-  getStackBlockCenterY,
-  isFallComplete,
-} from "./logic";
+import { getStackBlockCenterY } from "./logic";
+import { useTowerStackEngine } from "./use-tower-stack-engine";
 import {
   TOWER_STACK_BLOCK_HEIGHT,
   TOWER_STACK_BOARD_WIDTH,
   TOWER_STACK_FIRST_BLOCK_WIDTH,
   TOWER_STACK_FOUNDATION_HEIGHT,
-  TOWER_STACK_SPAWN_Y,
   TOWER_STACK_VIEWPORT_HEIGHT,
   type TowerStackActions,
   type TowerStackBlock,
+  type TowerStackFailureReason,
   type TowerStackPublicState,
+  type TowerStackReplay,
 } from "./types";
 
 type TowerStackGameProps = {
@@ -35,52 +26,13 @@ type TowerStackGameProps = {
   actions?: TowerStackActions;
 };
 
-const defaultActions: TowerStackActions = {
-  dropBlock: () => dropTowerStackBlock(),
-  settleBlock: () => settleTowerStackBlock(),
-  tick: () => tickTowerStack(),
-  reset: () => resetTowerStack(),
-};
-
-const TICK_INTERVAL_MS = 150;
-const CAMERA_DISPLAY_LERP = 0.14;
-
-const handleFailureTransition = (
-  previousPhase: TowerStackPublicState["phase"],
-  nextState: TowerStackPublicState,
-  setShowGameOverOverlay: (value: boolean) => void,
-  setShowMissOverlay: (value: boolean) => void,
-  setShowCollapseOverlay: (value: boolean) => void,
-): void => {
-  if (!nextState.lastDropMissed || previousPhase !== "playing") {
-    return;
-  }
-
-  if (nextState.phase === "ended") {
-    setShowGameOverOverlay(true);
-    return;
-  }
-
-  if (nextState.lastFailureReason === "collapse") {
-    setShowCollapseOverlay(true);
-    return;
-  }
-
-  setShowMissOverlay(true);
-};
-
 export const TowerStackGame = ({
   initialState,
   variant = "standalone",
   mode = "practice",
-  actions: actionsProp,
+  actions,
 }: TowerStackGameProps) => {
-  const actions = actionsProp ?? defaultActions;
   const isCompetitive = mode === "competitive";
-  const [state, setState] = useState(initialState);
-  const [blockCenter, setBlockCenter] = useState(initialState.blockCenter);
-  const [blockCenterY, setBlockCenterY] = useState(initialState.blockCenterY);
-  const [displayCameraY, setDisplayCameraY] = useState(initialState.cameraY);
   const [showIntroOverlay, setShowIntroOverlay] = useState(true);
   const [showMissOverlay, setShowMissOverlay] = useState(false);
   const [showCollapseOverlay, setShowCollapseOverlay] = useState(false);
@@ -88,188 +40,45 @@ export const TowerStackGame = ({
     initialState.phase === "ended",
   );
   const [isPending, startTransition] = useTransition();
-  const settleRequestedRef = useRef(false);
 
-  useEffect(() => {
-    settleRequestedRef.current = false;
-  }, [state.fallStartedAt]);
-
-  useEffect(() => {
-    if (state.phase !== "playing") {
-      setDisplayCameraY(state.cameraY);
-      return undefined;
-    }
-
-    let frame = 0;
-
-    const animate = (): void => {
-      setDisplayCameraY((current) => {
-        const delta = state.cameraY - current;
-
-        if (Math.abs(delta) < 0.01) {
-          return state.cameraY;
-        }
-
-        return current + delta * CAMERA_DISPLAY_LERP;
-      });
-      frame = window.requestAnimationFrame(animate);
-    };
-
-    frame = window.requestAnimationFrame(animate);
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [state.cameraY, state.phase]);
-
-  useEffect(() => {
-    if (state.phase !== "playing") {
-      return undefined;
-    }
-
-    const interval = window.setInterval(() => {
-      startTransition(async () => {
-        const previousPhase = state.phase;
-        const result = await actions.tick();
-
-        handleFailureTransition(
-          previousPhase,
-          result.state,
-          setShowGameOverOverlay,
-          setShowMissOverlay,
-          setShowCollapseOverlay,
-        );
-        setState(result.state);
-      });
-    }, TICK_INTERVAL_MS);
-
-    return () => window.clearInterval(interval);
-  }, [actions, state.phase]);
-
-  useEffect(() => {
-    if (state.phase !== "playing") {
-      setBlockCenter(state.blockCenter);
-      setBlockCenterY(state.blockCenterY);
-      return undefined;
-    }
-
-    if (state.blockPhase === "moving") {
-      let frame = 0;
-
-      const animate = (): void => {
-        setBlockCenter(
-          getOscillatingCenter(
-            state.blockWidth,
-            state.phaseOffset,
-            state.anchorAt,
-            state.speed,
-            Date.now(),
-          ),
-        );
-        setBlockCenterY(TOWER_STACK_SPAWN_Y);
-        frame = window.requestAnimationFrame(animate);
-      };
-
-      frame = window.requestAnimationFrame(animate);
-
-      return () => window.cancelAnimationFrame(frame);
-    }
-
-    if (
-      state.blockPhase === "falling" &&
-      state.lockedCenter !== null &&
-      state.fallStartedAt !== null
-    ) {
-      let frame = 0;
-
-      const animate = (): void => {
-        const now = Date.now();
-        const centerY = getFallingBlockCenterY(
-          state.stackBaseIndex,
-          state.stack.length,
-          state.fallStartedAt ?? now,
-          now,
-        );
-
-        setBlockCenter(state.lockedCenter ?? state.blockCenter);
-        setBlockCenterY(centerY);
-
-        if (
-          !settleRequestedRef.current &&
-          isFallComplete(
-            state.stackBaseIndex,
-            state.stack.length,
-            state.fallStartedAt ?? now,
-            now,
-          )
-        ) {
-          settleRequestedRef.current = true;
-          startTransition(async () => {
-            const previousPhase = state.phase;
-            const result = await actions.settleBlock();
-
-            handleFailureTransition(
-              previousPhase,
-              result.state,
-              setShowGameOverOverlay,
-              setShowMissOverlay,
-              setShowCollapseOverlay,
-            );
-            setState(result.state);
-          });
-        }
-
-        frame = window.requestAnimationFrame(animate);
-      };
-
-      frame = window.requestAnimationFrame(animate);
-
-      return () => window.cancelAnimationFrame(frame);
-    }
-
-    return undefined;
-  }, [
-    actions,
-    state.anchorAt,
-    state.blockCenter,
-    state.blockCenterY,
-    state.blockPhase,
-    state.blockWidth,
-    state.fallStartedAt,
-    state.lockedCenter,
-    state.phase,
-    state.phaseOffset,
-    state.speed,
-    state.stack.length,
-    state.stackBaseIndex,
-  ]);
-
-  const applyAction = (
-    action: () => Promise<{
-      success: boolean;
-      state: TowerStackPublicState;
-    }>,
+  const handleAttemptFailed = (
+    reason: TowerStackFailureReason | null,
   ): void => {
-    startTransition(async () => {
-      const previousPhase = state.phase;
-      const result = await action();
+    if (reason === "collapse") {
+      setShowCollapseOverlay(true);
+      return;
+    }
 
-      handleFailureTransition(
-        previousPhase,
-        result.state,
-        setShowGameOverOverlay,
-        setShowMissOverlay,
-        setShowCollapseOverlay,
-      );
-      setState(result.state);
+    setShowMissOverlay(true);
+  };
+
+  const handleGameEnded = (score: number, replay: TowerStackReplay): void => {
+    setShowGameOverOverlay(true);
+
+    if (!actions?.submitResult) {
+      return;
+    }
+
+    startTransition(async () => {
+      await actions.submitResult({ score, replay });
     });
   };
 
-  const isPlaying = state.phase === "playing";
-  const isEnded = state.phase === "ended";
-  const isFalling = state.blockPhase === "falling";
+  const { view, primaryAction, reset } = useTowerStackEngine({
+    onAttemptFailed: handleAttemptFailed,
+    onGameEnded: handleGameEnded,
+  });
+
+  const isPlaying = view.phase === "playing";
+  const isEnded = view.phase === "ended";
+  const isFalling = view.blockPhase === "falling";
   const canDrop =
-    (state.phase === "ready" || (isPlaying && !isFalling)) &&
-    !isEnded &&
-    !isPending;
+    (view.phase === "ready" || (isPlaying && !isFalling)) && !isEnded;
+
+  const handlePlayAgain = (): void => {
+    reset();
+    setShowGameOverOverlay(false);
+  };
 
   const shellClassName =
     variant === "standalone"
@@ -282,20 +91,20 @@ export const TowerStackGame = ({
     >
       <header className="shrink-0 flex justify-center pb-2 md:pb-3">
         <div className="rounded-full border border-[#243044] bg-white/5 px-3 py-1.5 text-xs text-[#8fa3bf] md:px-4 md:py-2 md:text-sm">
-          {TOWER_STACK_COPY.attemptsBadge(state.attemptsRemaining)}
+          {TOWER_STACK_COPY.attemptsBadge(view.attemptsRemaining)}
         </div>
       </header>
 
       <section className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[#243044] bg-[#121923] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
         <TowerBoard
-          activeBlockCenter={blockCenter}
-          activeBlockCenterY={blockCenterY}
-          activeBlockWidth={state.blockWidth}
-          cameraY={displayCameraY}
+          activeBlockCenter={view.blockCenter}
+          activeBlockCenterY={view.blockCenterY}
+          activeBlockWidth={view.blockWidth}
+          cameraY={view.cameraY}
           isPlaying={isPlaying}
-          score={state.totalScore}
-          stack={state.stack}
-          stackBaseIndex={state.stackBaseIndex}
+          score={view.totalScore}
+          stack={view.stack}
+          stackBaseIndex={view.stackBaseIndex}
         />
       </section>
 
@@ -303,7 +112,7 @@ export const TowerStackGame = ({
         <button
           className="w-full rounded-xl bg-gradient-to-br from-[#1e4bd2] to-[#4f7cff] px-3 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(30,75,210,0.28)] transition active:scale-[0.98] hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-45 md:py-3.5 md:text-base"
           disabled={!canDrop}
-          onClick={() => applyAction(actions.dropBlock)}
+          onClick={primaryAction}
           type="button"
         >
           {isPlaying ? TOWER_STACK_COPY.dropBlock : TOWER_STACK_COPY.startAttempt}
@@ -338,7 +147,7 @@ export const TowerStackGame = ({
               {TOWER_STACK_COPY.missTitle}
             </h2>
             <p className="mt-2 mb-4 text-sm leading-relaxed text-[#8fa3bf] md:text-base">
-              {TOWER_STACK_COPY.missDescription(state.attemptScore)}
+              {TOWER_STACK_COPY.missDescription(view.attemptScore)}
             </p>
             <button
               className="w-full rounded-xl bg-gradient-to-br from-[#1e4bd2] to-[#4f7cff] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(30,75,210,0.28)] md:text-base"
@@ -359,7 +168,7 @@ export const TowerStackGame = ({
               {TOWER_STACK_COPY.collapseTitle}
             </h2>
             <p className="mt-2 mb-4 text-sm leading-relaxed text-[#8fa3bf] md:text-base">
-              {TOWER_STACK_COPY.collapseDescription(state.attemptScore)}
+              {TOWER_STACK_COPY.collapseDescription(view.attemptScore)}
             </p>
             <button
               className="w-full rounded-xl bg-gradient-to-br from-[#1e4bd2] to-[#4f7cff] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(30,75,210,0.28)] md:text-base"
@@ -380,8 +189,8 @@ export const TowerStackGame = ({
             </h2>
             <p className="mt-2 mb-4 text-sm leading-relaxed text-[#8fa3bf] md:text-base">
               {isCompetitive
-                ? TOWER_STACK_COPY.competitiveGameOverDescription(state.totalScore)
-                : TOWER_STACK_COPY.gameOverDescription(state.totalScore)}
+                ? TOWER_STACK_COPY.competitiveGameOverDescription(view.totalScore)
+                : TOWER_STACK_COPY.gameOverDescription(view.totalScore)}
             </p>
             {isCompetitive ? (
               <a
@@ -394,10 +203,7 @@ export const TowerStackGame = ({
               <button
                 className="w-full rounded-xl bg-gradient-to-br from-[#e10600] to-[#ff4d4d] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(225,6,0,0.28)] md:text-base"
                 disabled={isPending}
-                onClick={() => {
-                  applyAction(actions.reset);
-                  setShowGameOverOverlay(false);
-                }}
+                onClick={handlePlayAgain}
                 type="button"
               >
                 {TOWER_STACK_COPY.playAgain}

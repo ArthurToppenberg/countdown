@@ -7,6 +7,8 @@ import {
   type DagligEmailEventProps,
 } from "@countdown/email";
 
+import { minigameIds } from "@countdown/minigame";
+
 import { logger } from "@/lib/logger";
 import { getMinigamePointsLeaderboard } from "@/lib/minigame/daily-minigame";
 import { getNextEvent } from "@/lib/next-event";
@@ -97,6 +99,7 @@ export const buildDagligEmailProps = async (): Promise<
       name: entry.name,
       points: entry.points,
     })),
+    hasActiveMinigame: minigameIds().length > 0,
   };
 };
 

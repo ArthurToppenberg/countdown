@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
 
-import { getActiveEvent } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
 import { getCompetitiveMinigameActions } from "@/lib/minigame/competitive-minigame-actions";
 import { getTodaysMinigameScore } from "@/lib/minigame/daily-minigame";
@@ -13,12 +12,6 @@ export default async function DailyGamePage() {
 
   if (!session) {
     redirect("/login?next=/game");
-  }
-
-  const activeEvent = await getActiveEvent();
-
-  if (activeEvent) {
-    redirect("/");
   }
 
   const todaysScore = await getTodaysMinigameScore(session.userId);

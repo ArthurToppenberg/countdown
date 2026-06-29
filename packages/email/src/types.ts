@@ -13,6 +13,7 @@ export type DagligEmailEventProps = {
   eventName: string;
   daysRemainingLabel: string;
   leaderboard: DagligEmailLeaderboardEntry[];
+  hasActiveMinigame: boolean;
 };
 
 export type DagligEmailSendInput = DagligEmailEventProps & {

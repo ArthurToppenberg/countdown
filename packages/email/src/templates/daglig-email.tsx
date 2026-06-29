@@ -71,17 +71,21 @@ export const DagligEmail = (props: DagligEmailProps) => {
         </>
       ) : null}
 
-      <Text style={centeredBodyStyle}>
-        Nååår{" "}
-        <span style={nameHighlightStyle}>{props.name}</span> er du klar til dagens
-        minigame.
-      </Text>
+      {props.hasActiveMinigame ? (
+        <>
+          <Text style={centeredBodyStyle}>
+            Nååår{" "}
+            <span style={nameHighlightStyle}>{props.name}</span> er du klar til
+            dagens minigame.
+          </Text>
 
-      <Section style={buttonSectionStyle}>
-        <Button href={props.gameUrl} style={buttonStyle}>
-          Spil minigame
-        </Button>
-      </Section>
+          <Section style={buttonSectionStyle}>
+            <Button href={props.gameUrl} style={buttonStyle}>
+              Spil minigame
+            </Button>
+          </Section>
+        </>
+      ) : null}
     </EmailLayout>
   );
 };

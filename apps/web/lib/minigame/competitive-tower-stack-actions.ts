@@ -1,16 +1,11 @@
 "use server";
 
 import {
-  clearTowerStackSession,
-  dropTowerStackBlock,
-  settleTowerStackBlock,
-  tickTowerStack,
   TOWER_STACK_ID,
-  type TowerStackActionResult,
-  type TowerStackPublicState,
+  type TowerStackResultPayload,
+  type TowerStackSubmitResult,
 } from "@countdown/minigame";
 
-import { assertNoActiveEventForMinigame } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
 
 import {
@@ -28,8 +23,6 @@ const requirePlayableSession = async (): Promise<{
   if (!session) {
     throw new Error("Du skal være logget ind for at spille.");
   }
-
-  await assertNoActiveEventForMinigame();
 
   const todaysScore = await getTodaysMinigameScore(session.userId);
 
@@ -49,43 +42,17 @@ const requirePlayableSession = async (): Promise<{
   };
 };
 
-const persistScoreIfEnded = async (
-  userId: string,
-  dailyMinigameId: string,
-  state: TowerStackPublicState,
-): Promise<void> => {
-  if (state.phase !== "ended") {
-    return;
-  }
-
-  await saveMinigamePoints(userId, dailyMinigameId, state.totalScore);
-  await clearTowerStackSession("competitive");
-};
-
-const withCompetitiveGuards = async (
-  action: () => Promise<TowerStackActionResult>,
-): Promise<TowerStackActionResult> => {
+// The client simulates the whole game and submits the result once it ends.
+//
+// TODO: anti-cheat — re-simulate `payload.replay` through the shared pure logic
+// (lockBlock/advanceTowerStackWorld/settleBlock) to derive the authoritative
+// score server-side and reject mismatches. For now we trust the client score.
+export const submitCompetitiveTowerStackResult = async (
+  payload: TowerStackResultPayload,
+): Promise<TowerStackSubmitResult> => {
   const { userId, dailyMinigameId } = await requirePlayableSession();
-  const result = await action();
-  await persistScoreIfEnded(userId, dailyMinigameId, result.state);
-  return result;
+
+  await saveMinigamePoints(userId, dailyMinigameId, payload.score);
+
+  return { success: true };
 };
-
-export const dropCompetitiveTowerStackBlock =
-  async (): Promise<TowerStackActionResult> =>
-    withCompetitiveGuards(() => dropTowerStackBlock("competitive"));
-
-export const settleCompetitiveTowerStackBlock =
-  async (): Promise<TowerStackActionResult> =>
-    withCompetitiveGuards(() => settleTowerStackBlock("competitive"));
-
-export const tickCompetitiveTowerStack =
-  async (): Promise<TowerStackActionResult> =>
-    withCompetitiveGuards(() => tickTowerStack("competitive"));
-
-const competitiveResetNotAllowed =
-  async (): Promise<TowerStackActionResult> => {
-    throw new Error("Dagens minigame kan ikke nulstilles.");
-  };
-
-export { competitiveResetNotAllowed };

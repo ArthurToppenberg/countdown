@@ -18,14 +18,11 @@ export { MinigamePlayer } from "./minigame-player";
 export {
   TOWER_STACK_ID,
   TowerStackGame,
-  clearTowerStackSession,
-  dropTowerStackBlock,
   getTowerStackState,
-  resetTowerStack,
-  settleTowerStackBlock,
-  tickTowerStack,
   towerStack,
-  type TowerStackActionResult,
   type TowerStackActions,
   type TowerStackPublicState,
+  type TowerStackReplay,
+  type TowerStackResultPayload,
+  type TowerStackSubmitResult,
 } from "./games/tower-stack";
