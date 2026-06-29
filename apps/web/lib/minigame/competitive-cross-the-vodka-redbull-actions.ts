@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  CROSS_THE_VODKA_REDBULL_ID,
   cashOutCrossTheVodkaRedbull,
   clearCrossTheVodkaRedbullSession,
   takeCrossTheVodkaRedbullStep,
@@ -15,8 +16,12 @@ import {
   getTodaysMinigameScore,
   saveMinigamePoints,
 } from "./daily-minigame";
+import { getOrCreateTodaysDailyMinigame } from "./daily-minigame-round";
 
-const requirePlayableSession = async (): Promise<string> => {
+const requirePlayableSession = async (): Promise<{
+  userId: string;
+  dailyMinigameId: string;
+}> => {
   const session = await getSession();
 
   if (!session) {
@@ -31,27 +36,37 @@ const requirePlayableSession = async (): Promise<string> => {
     throw new Error("Du har allerede spillet dagens minigame.");
   }
 
-  return session.userId;
+  const todaysRound = await getOrCreateTodaysDailyMinigame();
+
+  if (todaysRound.gameId !== CROSS_THE_VODKA_REDBULL_ID) {
+    throw new Error("Dagens minigame er et andet spil.");
+  }
+
+  return {
+    userId: session.userId,
+    dailyMinigameId: todaysRound.copenhagenDateKey,
+  };
 };
 
 const persistScoreIfEnded = async (
   userId: string,
+  dailyMinigameId: string,
   state: CrossTheVodkaRedbullPublicState,
 ): Promise<void> => {
   if (state.phase !== "ended") {
     return;
   }
 
-  await saveMinigamePoints(userId, state.bankroll);
+  await saveMinigamePoints(userId, dailyMinigameId, state.bankroll);
   await clearCrossTheVodkaRedbullSession("competitive");
 };
 
 const withCompetitiveGuards = async (
   action: () => Promise<CrossTheVodkaRedbullActionResult>,
 ): Promise<CrossTheVodkaRedbullActionResult> => {
-  const userId = await requirePlayableSession();
+  const { userId, dailyMinigameId } = await requirePlayableSession();
   const result = await action();
-  await persistScoreIfEnded(userId, result.state);
+  await persistScoreIfEnded(userId, dailyMinigameId, result.state);
   return result;
 };
 

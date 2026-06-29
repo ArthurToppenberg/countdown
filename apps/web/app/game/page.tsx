@@ -1,19 +1,12 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import {
-  getCrossTheVodkaRedbullState,
-  getFeaturedMinigame,
-  MinigamePlayer,
-} from "@countdown/minigame";
+import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
 
 import { getActiveEvent } from "@/lib/active-event";
 import { getSession } from "@/lib/auth";
-import {
-  cashOutCompetitiveCrossTheVodkaRedbull,
-  competitiveResetNotAllowed,
-  takeCompetitiveCrossTheVodkaRedbullStep,
-} from "@/lib/minigame/competitive-cross-the-vodka-redbull-actions";
+import { getCompetitiveMinigameActions } from "@/lib/minigame/competitive-minigame-actions";
 import { getTodaysMinigameScore } from "@/lib/minigame/daily-minigame";
+import { getOrCreateTodaysDailyMinigame } from "@/lib/minigame/daily-minigame-round";
 
 export default async function DailyGamePage() {
   const session = await getSession();
@@ -34,18 +27,26 @@ export default async function DailyGamePage() {
     redirect("/");
   }
 
-  const featuredGame = getFeaturedMinigame();
-  const initialState = await getCrossTheVodkaRedbullState("competitive");
+  const todaysRound = await getOrCreateTodaysDailyMinigame();
+  const game = getRegisteredMinigame(todaysRound.gameId);
+
+  if (!game) {
+    notFound();
+  }
+
+  const actions = getCompetitiveMinigameActions(game.id);
+
+  if (!actions) {
+    notFound();
+  }
+
+  const initialState = await game.getInitialState("competitive");
 
   return (
     <div className="h-dvh overflow-hidden overscroll-none">
       <MinigamePlayer
-        actions={{
-          takeStep: takeCompetitiveCrossTheVodkaRedbullStep,
-          cashOut: cashOutCompetitiveCrossTheVodkaRedbull,
-          reset: competitiveResetNotAllowed,
-        }}
-        gameId={featuredGame.id}
+        actions={actions}
+        gameId={game.id}
         initialState={initialState}
         mode="competitive"
         variant="standalone"

@@ -5,37 +5,51 @@ import {
   crossTheVodkaRedbull,
   getCrossTheVodkaRedbullState,
 } from "./games/cross-the-vodka-redbull";
+import {
+  assertManifestCoversRegisteredGames,
+  isMinigameActive,
+  listActiveMinigameIds,
+} from "./games-manifest";
+import type { MinigamePlayMode } from "./types";
 
 export type MinigameRegistryEntry = {
   id: string;
   title: string;
-  getInitialState: () => Promise<unknown>;
+  getInitialState: (mode?: MinigamePlayMode) => Promise<unknown>;
 };
 
 const minigameRegistry: Record<string, MinigameRegistryEntry> = {
   [CROSS_THE_VODKA_REDBULL_ID]: {
     id: CROSS_THE_VODKA_REDBULL_ID,
     title: crossTheVodkaRedbull.title,
-    getInitialState: () => getCrossTheVodkaRedbullState(),
+    getInitialState: (mode = "practice") => getCrossTheVodkaRedbullState(mode),
   },
 };
 
-export const FEATURED_MINIGAME_ID = CROSS_THE_VODKA_REDBULL_ID;
+const registeredMinigameIds = Object.keys(minigameRegistry);
 
-export const getFeaturedMinigame = (): MinigameRegistryEntry => {
-  const game = minigameRegistry[FEATURED_MINIGAME_ID];
+assertManifestCoversRegisteredGames(registeredMinigameIds);
 
-  if (!game) {
-    throw new Error(`Featured minigame "${FEATURED_MINIGAME_ID}" is not registered`);
+export const getRegisteredMinigame = (
+  id: string,
+): MinigameRegistryEntry | undefined => minigameRegistry[id];
+
+export const listRegisteredMinigames = (): MinigameRegistryEntry[] =>
+  Object.values(minigameRegistry);
+
+export const getMinigame = (id: string): MinigameRegistryEntry | undefined => {
+  const game = getRegisteredMinigame(id);
+
+  if (!game || !isMinigameActive(id)) {
+    return undefined;
   }
 
   return game;
 };
 
 export const listMinigames = (): MinigameRegistryEntry[] =>
-  Object.values(minigameRegistry);
+  listRegisteredMinigames().filter((game) => isMinigameActive(game.id));
 
-export const getMinigame = (id: string): MinigameRegistryEntry | undefined =>
-  minigameRegistry[id];
+export const minigameIds = (): string[] => listActiveMinigameIds(registeredMinigameIds);
 
-export const minigameIds = (): string[] => Object.keys(minigameRegistry);
+export const registeredMinigameIdsList = (): string[] => registeredMinigameIds;

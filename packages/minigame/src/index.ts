@@ -4,11 +4,12 @@ export {
   type MinigamePlayMode,
 } from "./types";
 export {
-  getFeaturedMinigame,
   getMinigame,
+  getRegisteredMinigame,
   listMinigames,
+  listRegisteredMinigames,
   minigameIds,
-  FEATURED_MINIGAME_ID,
+  registeredMinigameIdsList,
   type MinigameRegistryEntry,
 } from "./registry";
 export { MinigamePlayer } from "./minigame-player";

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 
-import { isSameCopenhagenDay } from "./copenhagen-date";
+import { getCopenhagenDateKey } from "./copenhagen-date";
+import { getOrCreateTodaysDailyMinigame } from "./daily-minigame-round";
 
 export type StoredMinigameScore = {
   id: string;
@@ -17,43 +18,51 @@ export type MinigameLeaderboardEntry = {
 export const getTodaysMinigameScore = async (
   userId: string,
 ): Promise<StoredMinigameScore | null> => {
-  const latestMinigame = await prisma.minigame.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
+  const copenhagenDateKey = getCopenhagenDateKey(new Date());
+
+  return prisma.minigame.findUnique({
+    where: {
+      dailyMinigameId_userId: {
+        dailyMinigameId: copenhagenDateKey,
+        userId,
+      },
+    },
     select: {
       id: true,
       points: true,
       createdAt: true,
     },
   });
-
-  if (!latestMinigame) {
-    return null;
-  }
-
-  if (!isSameCopenhagenDay(latestMinigame.createdAt, new Date())) {
-    return null;
-  }
-
-  return latestMinigame;
 };
 
 export const saveMinigamePoints = async (
   userId: string,
+  dailyMinigameId: string,
   points: number,
 ): Promise<void> => {
-  const existingScore = await getTodaysMinigameScore(userId);
+  const todaysRound = await getOrCreateTodaysDailyMinigame();
 
-  if (existingScore) {
-    return;
+  if (todaysRound.copenhagenDateKey !== dailyMinigameId) {
+    throw new Error("Score can only be saved for today's minigame round.");
   }
 
-  await prisma.minigame.create({
-    data: {
-      userId,
-      points: Math.round(points),
-    },
-  });
+  try {
+    await prisma.minigame.create({
+      data: {
+        userId,
+        dailyMinigameId,
+        points: Math.round(points),
+      },
+    });
+  } catch {
+    const existingScore = await getTodaysMinigameScore(userId);
+
+    if (existingScore) {
+      return;
+    }
+
+    throw new Error("Failed to save minigame score.");
+  }
 };
 
 export const getMinigamePointsLeaderboard = async (

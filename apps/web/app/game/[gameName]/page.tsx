@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getMinigame, MinigamePlayer } from "@countdown/minigame";
+import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
 
 type GamePageProps = {
   params: Promise<{
@@ -10,7 +10,7 @@ type GamePageProps = {
 
 export default async function GamePage({ params }: GamePageProps) {
   const { gameName } = await params;
-  const game = getMinigame(gameName);
+  const game = getRegisteredMinigame(gameName);
 
   if (!game) {
     notFound();
