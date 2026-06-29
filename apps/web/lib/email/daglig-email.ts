@@ -61,11 +61,20 @@ const sendDagligEmailBatch = async (
   return result;
 };
 
-const sendDagligEmailToUsers = async (where: {
-  password: { not: null };
-  role?: "ADMIN";
-}): Promise<DagligEmailBatchResult> => {
-  await assertNoActiveEventForEmail();
+type SendDagligEmailToUsersOptions = {
+  skipActiveEventCheck?: boolean;
+};
+
+const sendDagligEmailToUsers = async (
+  where: {
+    password: { not: null };
+    role?: "ADMIN";
+  },
+  options: SendDagligEmailToUsersOptions = {},
+): Promise<DagligEmailBatchResult> => {
+  if (!options.skipActiveEventCheck) {
+    await assertNoActiveEventForEmail();
+  }
 
   const eventProps = await buildDagligEmailProps();
 
@@ -121,12 +130,16 @@ export const sendDagligEmailToActiveUsers =
   async (): Promise<DagligEmailBatchResult> =>
     sendDagligEmailToUsers({ password: { not: null } });
 
-export const sendDagligEmailToAdminUsers =
-  async (): Promise<DagligEmailBatchResult> =>
-    sendDagligEmailToUsers({
+export const sendDagligEmailToAdminUsers = async (
+  options?: SendDagligEmailToUsersOptions,
+): Promise<DagligEmailBatchResult> =>
+  sendDagligEmailToUsers(
+    {
       role: "ADMIN",
       password: { not: null },
-    });
+    },
+    options,
+  );
 
 export {
   getDagligEmailSubject,

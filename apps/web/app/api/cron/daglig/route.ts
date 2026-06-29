@@ -85,9 +85,10 @@ export const POST = async (request: Request): Promise<NextResponse> => {
     return jsonResponse({ sent: false, reason: "outside-window" });
   }
 
+  const audience: DagligCronAudience = forceMode === "admin" ? "admin" : "all";
   const activeEvent = await getActiveEvent();
 
-  if (activeEvent) {
+  if (activeEvent && forceMode !== "admin") {
     logger.info("Daglig", "Skipping cron send — active event in progress", {
       eventId: activeEvent.id,
       eventName: activeEvent.name,
@@ -95,12 +96,12 @@ export const POST = async (request: Request): Promise<NextResponse> => {
     return jsonResponse({ sent: false, reason: "active-event" });
   }
 
-  const audience: DagligCronAudience = forceMode === "admin" ? "admin" : "all";
-
   try {
     const result =
       audience === "admin"
-        ? await sendDagligEmailToAdminUsers()
+        ? await sendDagligEmailToAdminUsers({
+            skipActiveEventCheck: forceMode === "admin",
+          })
         : await sendDagligEmailToActiveUsers();
 
     logger.info("Daglig", "Cron daily email batch finished", {

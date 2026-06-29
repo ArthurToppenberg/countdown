@@ -49,8 +49,15 @@ jobs:
           if jq -e 'has("sent") and (.sent | type) == "boolean" and .sent == false' \
             /tmp/daglig-response.json >/dev/null; then
             reason=$(jq -r '.reason // "unknown"' /tmp/daglig-response.json)
-            echo "::error::Daily email was not sent (${reason})"
-            exit 1
+            case "${reason}" in
+              outside-window|active-event)
+                echo "::notice::Daily email skipped (${reason})"
+                ;;
+              *)
+                echo "::error::Daily email was not sent (${reason})"
+                exit 1
+                ;;
+            esac
           fi
 
           if jq -e 'has("error")' /tmp/daglig-response.json >/dev/null; then
