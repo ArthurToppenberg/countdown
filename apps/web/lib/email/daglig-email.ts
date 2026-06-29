@@ -61,23 +61,25 @@ const sendDagligEmailBatch = async (
   return result;
 };
 
-const sendDagligEmailToUsersWithPassword =
-  async (): Promise<DagligEmailBatchResult> => {
-    await assertNoActiveEventForEmail();
+const sendDagligEmailToUsers = async (where: {
+  password: { not: null };
+  role?: "ADMIN";
+}): Promise<DagligEmailBatchResult> => {
+  await assertNoActiveEventForEmail();
 
-    const eventProps = await buildDagligEmailProps();
+  const eventProps = await buildDagligEmailProps();
 
-    if (!eventProps) {
-      throw new Error("Ingen kommende begivenhed at sende daglig e-mail for");
-    }
+  if (!eventProps) {
+    throw new Error("Ingen kommende begivenhed at sende daglig e-mail for");
+  }
 
-    const users = await prisma.user.findMany({
-      where: { password: { not: null } },
-      select: { email: true, name: true },
-    });
+  const users = await prisma.user.findMany({
+    where,
+    select: { email: true, name: true },
+  });
 
-    return sendDagligEmailBatch(eventProps, users);
-  };
+  return sendDagligEmailBatch(eventProps, users);
+};
 
 export const buildDagligEmailProps = async (): Promise<
   DagligEmailEventProps | undefined
@@ -117,7 +119,14 @@ export const sendDagligEmail = async (
 
 export const sendDagligEmailToActiveUsers =
   async (): Promise<DagligEmailBatchResult> =>
-    sendDagligEmailToUsersWithPassword();
+    sendDagligEmailToUsers({ password: { not: null } });
+
+export const sendDagligEmailToAdminUsers =
+  async (): Promise<DagligEmailBatchResult> =>
+    sendDagligEmailToUsers({
+      role: "ADMIN",
+      password: { not: null },
+    });
 
 export {
   getDagligEmailSubject,
