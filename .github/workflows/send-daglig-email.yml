@@ -8,7 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Send even if it is not 6 AM Copenhagen time
+        description: Send to all users even if it is not 6 AM Copenhagen time
+        type: boolean
+        default: false
+      force_admin:
+        description: Send to admins only, even if it is not 6 AM Copenhagen time
         type: boolean
         default: false
 
@@ -22,10 +26,13 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+          FORCE_ADMIN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_admin }}
         run: |
           set -euo pipefail
           url="${APP_URL%/}/api/cron/daglig"
-          if [ "${FORCE}" = "true" ]; then
+          if [ "${FORCE_ADMIN}" = "true" ]; then
+            url="${url}?force=admin"
+          elif [ "${FORCE}" = "true" ]; then
             url="${url}?force=true"
           fi
           status=$(curl --silent --show-error --fail-with-body \

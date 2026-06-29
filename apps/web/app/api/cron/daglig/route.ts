@@ -2,7 +2,10 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { getActiveEvent } from "@/lib/active-event";
-import { sendDagligEmailToActiveUsers } from "@/lib/email/daglig-email";
+import {
+  sendDagligEmailToActiveUsers,
+  sendDagligEmailToAdminUsers,
+} from "@/lib/email/daglig-email";
 import { getCopenhagenHour } from "@/lib/minigame/copenhagen-date";
 import { logger } from "@/lib/logger";
 
@@ -15,6 +18,10 @@ const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate",
   Pragma: "no-cache",
 };
+
+type DagligCronAudience = "all" | "admin";
+
+type DagligCronForceMode = "none" | DagligCronAudience;
 
 const jsonResponse = (
   body: Record<string, unknown>,
@@ -45,8 +52,19 @@ const isAuthorized = (request: Request, secret: string): boolean => {
   return timingSafeEqual(provided, expected);
 };
 
-const isForced = (request: Request): boolean =>
-  new URL(request.url).searchParams.get("force") === "true";
+const getForceMode = (request: Request): DagligCronForceMode => {
+  const force = new URL(request.url).searchParams.get("force");
+
+  if (force === "admin") {
+    return "admin";
+  }
+
+  if (force === "true") {
+    return "all";
+  }
+
+  return "none";
+};
 
 export const POST = async (request: Request): Promise<NextResponse> => {
   const cronSecret = process.env.CRON_SECRET;
@@ -60,7 +78,9 @@ export const POST = async (request: Request): Promise<NextResponse> => {
     return jsonResponse({ error: "Unauthorized." }, { status: 401 });
   }
 
-  if (!isForced(request) && getCopenhagenHour(new Date()) !== SCHEDULED_COPENHAGEN_HOUR) {
+  const forceMode = getForceMode(request);
+
+  if (forceMode === "none" && getCopenhagenHour(new Date()) !== SCHEDULED_COPENHAGEN_HOUR) {
     logger.info("Daglig", "Skipping cron send — not 6 AM Copenhagen time");
     return jsonResponse({ sent: false, reason: "outside-window" });
   }
@@ -75,20 +95,28 @@ export const POST = async (request: Request): Promise<NextResponse> => {
     return jsonResponse({ sent: false, reason: "active-event" });
   }
 
+  const audience: DagligCronAudience = forceMode === "admin" ? "admin" : "all";
+
   try {
-    const result = await sendDagligEmailToActiveUsers();
+    const result =
+      audience === "admin"
+        ? await sendDagligEmailToAdminUsers()
+        : await sendDagligEmailToActiveUsers();
 
     logger.info("Daglig", "Cron daily email batch finished", {
+      audience,
       sent: result.sent,
       failed: result.failed.length,
     });
 
     return jsonResponse({
+      audience,
       sent: result.sent,
       failed: result.failed,
     });
   } catch (error) {
     logger.error("Daglig", "Cron daily email batch failed", {
+      audience,
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 

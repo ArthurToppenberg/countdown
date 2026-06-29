@@ -23,6 +23,62 @@ export type DagligEmailBatchResult = {
   failed: { email: string; error: string }[];
 };
 
+type DagligEmailRecipient = {
+  email: string;
+  name: string | null;
+};
+
+const sendDagligEmailBatch = async (
+  eventProps: DagligEmailEventProps,
+  users: DagligEmailRecipient[],
+): Promise<DagligEmailBatchResult> => {
+  const result: DagligEmailBatchResult = { sent: 0, failed: [] };
+
+  for (const user of users) {
+    try {
+      await sendDagligEmailWithEvent({
+        ...eventProps,
+        to: user.email,
+        name: requireUserName(
+          user.name,
+          "Bruger mangler navn — kan ikke sende daglig e-mail",
+        ),
+      });
+      result.sent += 1;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      logger.error("Daglig", "Failed to send daily email to user", {
+        email: user.email,
+        errorMessage,
+      });
+
+      result.failed.push({ email: user.email, error: errorMessage });
+    }
+  }
+
+  return result;
+};
+
+const sendDagligEmailToUsersWithPassword =
+  async (): Promise<DagligEmailBatchResult> => {
+    await assertNoActiveEventForEmail();
+
+    const eventProps = await buildDagligEmailProps();
+
+    if (!eventProps) {
+      throw new Error("Ingen kommende begivenhed at sende daglig e-mail for");
+    }
+
+    const users = await prisma.user.findMany({
+      where: { password: { not: null } },
+      select: { email: true, name: true },
+    });
+
+    return sendDagligEmailBatch(eventProps, users);
+  };
+
 export const buildDagligEmailProps = async (): Promise<
   DagligEmailEventProps | undefined
 > => {
@@ -60,48 +116,8 @@ export const sendDagligEmail = async (
 };
 
 export const sendDagligEmailToActiveUsers =
-  async (): Promise<DagligEmailBatchResult> => {
-    await assertNoActiveEventForEmail();
-
-    const eventProps = await buildDagligEmailProps();
-
-    if (!eventProps) {
-      throw new Error("Ingen kommende begivenhed at sende daglig e-mail for");
-    }
-
-    const users = await prisma.user.findMany({
-      where: { password: { not: null } },
-      select: { email: true, name: true },
-    });
-
-    const result: DagligEmailBatchResult = { sent: 0, failed: [] };
-
-    for (const user of users) {
-      try {
-        await sendDagligEmailWithEvent({
-          ...eventProps,
-          to: user.email,
-          name: requireUserName(
-            user.name,
-            "Bruger mangler navn — kan ikke sende daglig e-mail",
-          ),
-        });
-        result.sent += 1;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-
-        logger.error("Daglig", "Failed to send daily email to user", {
-          email: user.email,
-          errorMessage,
-        });
-
-        result.failed.push({ email: user.email, error: errorMessage });
-      }
-    }
-
-    return result;
-  };
+  async (): Promise<DagligEmailBatchResult> =>
+    sendDagligEmailToUsersWithPassword();
 
 export {
   getDagligEmailSubject,

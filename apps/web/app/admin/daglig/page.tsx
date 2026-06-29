@@ -15,9 +15,6 @@ export default async function AdminDagligPage() {
   const [users, emailProps, adminUser, activeEvent] = await Promise.all([
     prisma.user
       .findMany({
-        where: {
-          role: "USER",
-        },
         orderBy: {
           createdAt: "asc",
         },
