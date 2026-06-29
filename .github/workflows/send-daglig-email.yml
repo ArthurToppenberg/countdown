@@ -32,7 +32,21 @@ jobs:
             --output /tmp/daglig-response.json --write-out "%{http_code}" \
             --request POST \
             --header "Authorization: Bearer ${CRON_SECRET}" \
+            --header "Cache-Control: no-cache" \
+            --header "Pragma: no-cache" \
             "${url}")
           echo "HTTP ${status}"
           cat /tmp/daglig-response.json
           echo
+
+          if jq -e 'has("sent") and (.sent | type) == "boolean" and .sent == false' \
+            /tmp/daglig-response.json >/dev/null; then
+            reason=$(jq -r '.reason // "unknown"' /tmp/daglig-response.json)
+            echo "::error::Daily email was not sent (${reason})"
+            exit 1
+          fi
+
+          if jq -e 'has("error")' /tmp/daglig-response.json >/dev/null; then
+            echo "::error::$(jq -r '.error' /tmp/daglig-response.json)"
+            exit 1
+          fi

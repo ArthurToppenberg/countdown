@@ -11,6 +11,23 @@ export const dynamic = "force-dynamic";
 
 const SCHEDULED_COPENHAGEN_HOUR = 6;
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  Pragma: "no-cache",
+};
+
+const jsonResponse = (
+  body: Record<string, unknown>,
+  init?: ResponseInit,
+): NextResponse =>
+  NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...NO_STORE_HEADERS,
+      ...init?.headers,
+    },
+  });
+
 const isAuthorized = (request: Request, secret: string): boolean => {
   const header = request.headers.get("authorization");
 
@@ -36,16 +53,16 @@ export const POST = async (request: Request): Promise<NextResponse> => {
 
   if (!cronSecret) {
     logger.error("Daglig", "Missing CRON_SECRET environment variable");
-    return NextResponse.json({ error: "Server misconfigured." }, { status: 500 });
+    return jsonResponse({ error: "Server misconfigured." }, { status: 500 });
   }
 
   if (!isAuthorized(request, cronSecret)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return jsonResponse({ error: "Unauthorized." }, { status: 401 });
   }
 
   if (!isForced(request) && getCopenhagenHour(new Date()) !== SCHEDULED_COPENHAGEN_HOUR) {
     logger.info("Daglig", "Skipping cron send — not 6 AM Copenhagen time");
-    return NextResponse.json({ sent: false, reason: "outside-window" });
+    return jsonResponse({ sent: false, reason: "outside-window" });
   }
 
   const activeEvent = await getActiveEvent();
@@ -55,7 +72,7 @@ export const POST = async (request: Request): Promise<NextResponse> => {
       eventId: activeEvent.id,
       eventName: activeEvent.name,
     });
-    return NextResponse.json({ sent: false, reason: "active-event" });
+    return jsonResponse({ sent: false, reason: "active-event" });
   }
 
   try {
@@ -66,7 +83,7 @@ export const POST = async (request: Request): Promise<NextResponse> => {
       failed: result.failed.length,
     });
 
-    return NextResponse.json({
+    return jsonResponse({
       sent: result.sent,
       failed: result.failed,
     });
@@ -75,7 +92,7 @@ export const POST = async (request: Request): Promise<NextResponse> => {
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 
-    return NextResponse.json(
+    return jsonResponse(
       {
         error:
           error instanceof Error
