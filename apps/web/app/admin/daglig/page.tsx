@@ -21,6 +21,7 @@ export default async function AdminDagligPage() {
           id: true,
           email: true,
           name: true,
+          dagligEmailOptIn: true,
         },
       })
       .catch(() => undefined),

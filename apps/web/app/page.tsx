@@ -12,7 +12,7 @@ import {
 } from "@/lib/minigame/daily-minigame";
 import { getOrCreateTodaysDailyMinigame } from "@/lib/minigame/daily-minigame-round";
 import prisma from "@/lib/prisma";
-import { getRegisteredMinigame } from "@countdown/minigame";
+import { getMinigame } from "@countdown/minigame";
 import { Badge } from "@countdown/ui/components/badge";
 import { Button } from "@countdown/ui/components/button";
 import {
@@ -134,7 +134,7 @@ export default async function Home() {
       ? await getOrCreateTodaysDailyMinigame().catch(() => undefined)
       : undefined;
   const todaysGame = todaysRound
-    ? getRegisteredMinigame(todaysRound.gameId)
+    ? getMinigame(todaysRound.gameId)
     : undefined;
 
   return (
@@ -181,13 +181,11 @@ export default async function Home() {
           </p>
         </div>
 
-        {session && canPlayOfficialMinigame ? (
+        {session && canPlayOfficialMinigame && todaysGame ? (
           <div className="mb-8">
             <Link href="/game">
               <Button className="w-full">
-                {todaysGame
-                  ? `Spil dagens minigame: ${todaysGame.title}`
-                  : "Spil dagens minigame"}
+                {`Spil dagens minigame: ${todaysGame.title}`}
               </Button>
             </Link>
           </div>

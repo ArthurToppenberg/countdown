@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
+import { getMinigame, MinigamePlayer } from "@countdown/minigame";
 
 import { getSession } from "@/lib/auth";
 import { getCompetitiveMinigameActions } from "@/lib/minigame/competitive-minigame-actions";
@@ -21,10 +21,10 @@ export default async function DailyGamePage() {
   }
 
   const todaysRound = await getOrCreateTodaysDailyMinigame();
-  const game = getRegisteredMinigame(todaysRound.gameId);
+  const game = getMinigame(todaysRound.gameId);
 
   if (!game) {
-    notFound();
+    redirect("/game/unavailable");
   }
 
   const actions = getCompetitiveMinigameActions(game.id);

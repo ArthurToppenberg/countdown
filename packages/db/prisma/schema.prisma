@@ -20,6 +20,7 @@ model User {
   password               String?
   passwordResetToken     String?    @unique
   passwordResetExpiresAt DateTime?
+  dagligEmailOptIn       Boolean    @default(true)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
   minigames              Minigame[]

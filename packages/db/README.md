@@ -88,6 +88,36 @@ Prisma holder `_prisma_migrations`-tabellen synkron med filerne i `prisma/migrat
 
 Til deploy og CI anvendes `prisma migrate deploy` (ikke `migrate dev`). Det kører eksisterende migrationsfiler; det **opretter ikke** nye. Nye migrationer skal altid genereres lokalt med `db:migrate` før merge.
 
+## Fejlfinding
+
+### "The migration `<navn>` was modified after it was applied"
+
+Prisma gemmer en checksum af hver anvendt migration i tabellen `_prisma_migrations`. Hvis indholdet i en allerede anvendt `migration.sql` ændres, matcher checksummen ikke længere, og Prisma stopper og foreslår `migrate reset`.
+
+**Kør aldrig `migrate reset` mod produktionsdatabasen — det sletter al data.**
+
+Årsagen er altid, at en committet/anvendt migration er blevet redigeret bagefter (se reglerne ovenfor — det må ikke ske). Sådan retter du det uden at nulstille databasen:
+
+1. Find den commit, hvor migrationen først blev tilføjet:
+
+```bash
+git log --oneline -- packages/db/prisma/migrations/<navn>/migration.sql
+```
+
+2. Gendan filen til det indhold, der faktisk blev anvendt (den oprindelige version):
+
+```bash
+git checkout <commit> -- packages/db/prisma/migrations/<navn>/migration.sql
+```
+
+3. Bekræft at filen nu matcher den anvendte version (tom diff):
+
+```bash
+git diff <commit> -- packages/db/prisma/migrations/<navn>/migration.sql
+```
+
+Nu matcher checksummen igen, og `db:migrate` kan køres uden reset. Skal indholdet faktisk ændres, så lav en **ny** migration i stedet for at redigere den gamle.
+
 ## Struktur
 
 ```

@@ -3,15 +3,20 @@
 import { MailIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { sendDagligEmailToUser } from "@/app/admin/daglig/actions";
+import {
+  sendDagligEmailToUser,
+  setDagligEmailOptIn,
+} from "@/app/admin/daglig/actions";
 import { DagligEmailPreviewFrame } from "@/components/daglig-email-preview-frame";
 import { Button } from "@countdown/ui/components/button";
 import { Input } from "@countdown/ui/components/input";
+import { Switch } from "@countdown/ui/components/switch";
 
 export type DagligUser = {
   id: string;
   email: string;
   name: string | null;
+  dagligEmailOptIn: boolean;
 };
 
 type DagligManagerProps = {
@@ -38,6 +43,12 @@ export const DagligManager = ({
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const [successUserId, setSuccessUserId] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [optInState, setOptInState] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(users.map((user) => [user.id, user.dagligEmailOptIn])),
+  );
+  const [pendingOptInUserId, setPendingOptInUserId] = useState<string | null>(
+    null,
+  );
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -70,6 +81,30 @@ export const DagligManager = ({
 
     setSuccessUserId(user.id);
     setSendingUserId(null);
+  };
+
+  const handleToggleOptIn = async (
+    user: DagligUser,
+    nextOptIn: boolean,
+  ): Promise<void> => {
+    setPendingOptInUserId(user.id);
+    setOptInState((current) => ({ ...current, [user.id]: nextOptIn }));
+    setRowErrors((current) => {
+      const { [user.id]: _removed, ...rest } = current;
+      return rest;
+    });
+
+    const result = await setDagligEmailOptIn(user.id, nextOptIn);
+
+    if (!result.success) {
+      setOptInState((current) => ({ ...current, [user.id]: !nextOptIn }));
+      setRowErrors((current) => ({
+        ...current,
+        [user.id]: result.error,
+      }));
+    }
+
+    setPendingOptInUserId(null);
   };
 
   return (
@@ -143,6 +178,7 @@ export const DagligManager = ({
                 <tr className="border-b bg-muted/40 text-left">
                   <th className="px-4 py-3 font-medium">E-mail</th>
                   <th className="px-4 py-3 font-medium">Navn</th>
+                  <th className="px-4 py-3 font-medium">Tilmeldt</th>
                   <th className="px-4 py-3 font-medium">
                     <span className="sr-only">Handling</span>
                   </th>
@@ -153,6 +189,8 @@ export const DagligManager = ({
                   const isSending = sendingUserId === user.id;
                   const sendSucceeded = successUserId === user.id;
                   const error = rowErrors[user.id];
+                  const optedIn = optInState[user.id] ?? user.dagligEmailOptIn;
+                  const isUpdatingOptIn = pendingOptInUserId === user.id;
 
                   return (
                     <tr key={user.id} className="border-b last:border-b-0">
@@ -161,10 +199,23 @@ export const DagligManager = ({
                         {user.name ?? "—"}
                       </td>
                       <td className="px-4 py-3">
+                        <Switch
+                          aria-label={`Tilmeld ${user.email} til daglig mail`}
+                          checked={optedIn}
+                          disabled={isUpdatingOptIn}
+                          onCheckedChange={(checked) =>
+                            handleToggleOptIn(user, checked)
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="flex flex-col gap-1.5">
                           <Button
                             disabled={
-                              !canSendEmail || !user.name?.trim() || isSending
+                              !canSendEmail ||
+                              !user.name?.trim() ||
+                              !optedIn ||
+                              isSending
                             }
                             onClick={() => handleSend(user)}
                             size="sm"

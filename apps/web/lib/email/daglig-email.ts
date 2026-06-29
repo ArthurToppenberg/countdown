@@ -73,7 +73,7 @@ const sendDagligEmailToUsers = async (where: {
   }
 
   const users = await prisma.user.findMany({
-    where,
+    where: { ...where, dagligEmailOptIn: true },
     select: { email: true, name: true },
   });
 
