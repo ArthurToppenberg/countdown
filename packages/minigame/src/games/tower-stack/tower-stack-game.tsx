@@ -7,20 +7,22 @@ import {
   dropTowerStackBlock,
   resetTowerStack,
   settleTowerStackBlock,
+  tickTowerStack,
 } from "./actions";
 import { TOWER_STACK_COPY } from "./copy";
 import {
   getFallingBlockCenterY,
   getOscillatingCenter,
+  getStackBlockCenterY,
   isFallComplete,
 } from "./logic";
 import {
   TOWER_STACK_BLOCK_HEIGHT,
-  TOWER_STACK_BOARD_HEIGHT,
   TOWER_STACK_BOARD_WIDTH,
-  TOWER_STACK_FOUNDATION_HEIGHT,
   TOWER_STACK_FIRST_BLOCK_WIDTH,
+  TOWER_STACK_FOUNDATION_HEIGHT,
   TOWER_STACK_SPAWN_Y,
+  TOWER_STACK_VIEWPORT_HEIGHT,
   type TowerStackActions,
   type TowerStackBlock,
   type TowerStackPublicState,
@@ -36,7 +38,35 @@ type TowerStackGameProps = {
 const defaultActions: TowerStackActions = {
   dropBlock: () => dropTowerStackBlock(),
   settleBlock: () => settleTowerStackBlock(),
+  tick: () => tickTowerStack(),
   reset: () => resetTowerStack(),
+};
+
+const TICK_INTERVAL_MS = 150;
+const CAMERA_DISPLAY_LERP = 0.14;
+
+const handleFailureTransition = (
+  previousPhase: TowerStackPublicState["phase"],
+  nextState: TowerStackPublicState,
+  setShowGameOverOverlay: (value: boolean) => void,
+  setShowMissOverlay: (value: boolean) => void,
+  setShowCollapseOverlay: (value: boolean) => void,
+): void => {
+  if (!nextState.lastDropMissed || previousPhase !== "playing") {
+    return;
+  }
+
+  if (nextState.phase === "ended") {
+    setShowGameOverOverlay(true);
+    return;
+  }
+
+  if (nextState.lastFailureReason === "collapse") {
+    setShowCollapseOverlay(true);
+    return;
+  }
+
+  setShowMissOverlay(true);
 };
 
 export const TowerStackGame = ({
@@ -50,8 +80,10 @@ export const TowerStackGame = ({
   const [state, setState] = useState(initialState);
   const [blockCenter, setBlockCenter] = useState(initialState.blockCenter);
   const [blockCenterY, setBlockCenterY] = useState(initialState.blockCenterY);
+  const [displayCameraY, setDisplayCameraY] = useState(initialState.cameraY);
   const [showIntroOverlay, setShowIntroOverlay] = useState(true);
   const [showMissOverlay, setShowMissOverlay] = useState(false);
+  const [showCollapseOverlay, setShowCollapseOverlay] = useState(false);
   const [showGameOverOverlay, setShowGameOverOverlay] = useState(
     initialState.phase === "ended",
   );
@@ -64,9 +96,59 @@ export const TowerStackGame = ({
 
   useEffect(() => {
     if (state.phase !== "playing") {
+      setDisplayCameraY(state.cameraY);
+      return undefined;
+    }
+
+    let frame = 0;
+
+    const animate = (): void => {
+      setDisplayCameraY((current) => {
+        const delta = state.cameraY - current;
+
+        if (Math.abs(delta) < 0.01) {
+          return state.cameraY;
+        }
+
+        return current + delta * CAMERA_DISPLAY_LERP;
+      });
+      frame = window.requestAnimationFrame(animate);
+    };
+
+    frame = window.requestAnimationFrame(animate);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [state.cameraY, state.phase]);
+
+  useEffect(() => {
+    if (state.phase !== "playing") {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      startTransition(async () => {
+        const previousPhase = state.phase;
+        const result = await actions.tick();
+
+        handleFailureTransition(
+          previousPhase,
+          result.state,
+          setShowGameOverOverlay,
+          setShowMissOverlay,
+          setShowCollapseOverlay,
+        );
+        setState(result.state);
+      });
+    }, TICK_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [actions, state.phase]);
+
+  useEffect(() => {
+    if (state.phase !== "playing") {
       setBlockCenter(state.blockCenter);
       setBlockCenterY(state.blockCenterY);
-      return;
+      return undefined;
     }
 
     if (state.blockPhase === "moving") {
@@ -101,6 +183,7 @@ export const TowerStackGame = ({
       const animate = (): void => {
         const now = Date.now();
         const centerY = getFallingBlockCenterY(
+          state.stackBaseIndex,
           state.stack.length,
           state.fallStartedAt ?? now,
           now,
@@ -111,21 +194,25 @@ export const TowerStackGame = ({
 
         if (
           !settleRequestedRef.current &&
-          isFallComplete(state.stack.length, state.fallStartedAt ?? now, now)
+          isFallComplete(
+            state.stackBaseIndex,
+            state.stack.length,
+            state.fallStartedAt ?? now,
+            now,
+          )
         ) {
           settleRequestedRef.current = true;
           startTransition(async () => {
-            const wasPlaying = state.phase === "playing";
+            const previousPhase = state.phase;
             const result = await actions.settleBlock();
 
-            if (result.success && wasPlaying && result.state.lastDropMissed) {
-              if (result.state.phase === "ended") {
-                setShowGameOverOverlay(true);
-              } else {
-                setShowMissOverlay(true);
-              }
-            }
-
+            handleFailureTransition(
+              previousPhase,
+              result.state,
+              setShowGameOverOverlay,
+              setShowMissOverlay,
+              setShowCollapseOverlay,
+            );
             setState(result.state);
           });
         }
@@ -152,6 +239,7 @@ export const TowerStackGame = ({
     state.phaseOffset,
     state.speed,
     state.stack.length,
+    state.stackBaseIndex,
   ]);
 
   const applyAction = (
@@ -161,7 +249,16 @@ export const TowerStackGame = ({
     }>,
   ): void => {
     startTransition(async () => {
+      const previousPhase = state.phase;
       const result = await action();
+
+      handleFailureTransition(
+        previousPhase,
+        result.state,
+        setShowGameOverOverlay,
+        setShowMissOverlay,
+        setShowCollapseOverlay,
+      );
       setState(result.state);
     });
   };
@@ -183,39 +280,22 @@ export const TowerStackGame = ({
     <div
       className={`flex flex-col overflow-hidden bg-[#0b0f14] px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] text-[#e8eef7] md:px-5 md:py-5 ${shellClassName}`}
     >
-      <header className="shrink-0 pb-2 md:pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold leading-tight md:text-xl">
-              {TOWER_STACK_COPY.title}
-            </h1>
-            <p className="text-[0.68rem] text-[#8fa3bf] md:text-sm">
-              {TOWER_STACK_COPY.subtitle}
-            </p>
-          </div>
-          <div className="shrink-0 rounded-full border border-[#243044] bg-white/5 px-2 py-1 text-[0.65rem] text-[#8fa3bf] md:px-3 md:py-1.5 md:text-xs">
-            {TOWER_STACK_COPY.attemptsBadge(state.attemptsRemaining)}
-          </div>
+      <header className="shrink-0 flex justify-center pb-2 md:pb-3">
+        <div className="rounded-full border border-[#243044] bg-white/5 px-3 py-1.5 text-xs text-[#8fa3bf] md:px-4 md:py-2 md:text-sm">
+          {TOWER_STACK_COPY.attemptsBadge(state.attemptsRemaining)}
         </div>
       </header>
-
-      <div className="shrink-0 grid grid-cols-3 gap-1.5 pb-2 md:gap-3 md:pb-3">
-        <Stat label={TOWER_STACK_COPY.statAttempts} value={String(state.attemptsRemaining)} />
-        <Stat
-          accent="gold"
-          label={TOWER_STACK_COPY.statTotal}
-          value={String(state.totalScore)}
-        />
-        <Stat label={TOWER_STACK_COPY.statTower} value={String(state.attemptScore)} />
-      </div>
 
       <section className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[#243044] bg-[#121923] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
         <TowerBoard
           activeBlockCenter={blockCenter}
           activeBlockCenterY={blockCenterY}
           activeBlockWidth={state.blockWidth}
+          cameraY={displayCameraY}
           isPlaying={isPlaying}
+          score={state.totalScore}
           stack={state.stack}
+          stackBaseIndex={state.stackBaseIndex}
         />
       </section>
 
@@ -271,6 +351,27 @@ export const TowerStackGame = ({
         </div>
       ) : null}
 
+      {showCollapseOverlay ? (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#030712]/72 p-4">
+          <div className="w-full max-w-[360px] rounded-2xl border border-amber-400/35 bg-[#121923] p-5 text-center shadow-[0_12px_40px_rgba(0,0,0,0.45)] md:max-w-[400px] md:p-6">
+            <div className="mb-2 text-4xl">📉</div>
+            <h2 className="text-xl font-semibold text-amber-300 md:text-2xl">
+              {TOWER_STACK_COPY.collapseTitle}
+            </h2>
+            <p className="mt-2 mb-4 text-sm leading-relaxed text-[#8fa3bf] md:text-base">
+              {TOWER_STACK_COPY.collapseDescription(state.attemptScore)}
+            </p>
+            <button
+              className="w-full rounded-xl bg-gradient-to-br from-[#1e4bd2] to-[#4f7cff] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(30,75,210,0.28)] md:text-base"
+              onClick={() => setShowCollapseOverlay(false)}
+              type="button"
+            >
+              {TOWER_STACK_COPY.collapseButton}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {showGameOverOverlay ? (
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#030712]/72 p-4">
           <div className="w-full max-w-[360px] rounded-2xl border border-[#243044] bg-[#121923] p-5 text-center shadow-[0_12px_40px_rgba(0,0,0,0.45)] md:max-w-[400px] md:p-6">
@@ -319,33 +420,15 @@ export const TowerStackGame = ({
   return <div className="flex h-full justify-center bg-[#0b0f14]">{game}</div>;
 };
 
-type StatProps = {
-  label: string;
-  value: string;
-  accent?: "gold";
-};
-
-const Stat = ({ label, value, accent }: StatProps) => (
-  <div className="rounded-lg border border-[#243044] bg-[#121923] px-1.5 py-1.5 text-center md:rounded-xl md:px-3 md:py-2.5">
-    <div className="text-[0.58rem] uppercase tracking-wide text-[#8fa3bf] md:text-[0.7rem]">
-      {label}
-    </div>
-    <div
-      className={`truncate text-[0.8rem] font-bold tabular-nums md:text-base ${
-        accent === "gold" ? "text-[#ffd166]" : "text-[#e8eef7]"
-      }`}
-    >
-      {value}
-    </div>
-  </div>
-);
-
 type TowerBoardProps = {
   stack: TowerStackBlock[];
+  stackBaseIndex: number;
   activeBlockCenter: number;
   activeBlockCenterY: number;
   activeBlockWidth: number;
+  cameraY: number;
   isPlaying: boolean;
+  score: number;
 };
 
 const toPercentX = (center: number, width: number): { left: string; width: string } => ({
@@ -353,71 +436,80 @@ const toPercentX = (center: number, width: number): { left: string; width: strin
   width: `${(width / TOWER_STACK_BOARD_WIDTH) * 100}%`,
 });
 
-const toPercentBottom = (centerY: number): string =>
-  `${((centerY - TOWER_STACK_BLOCK_HEIGHT / 2) / TOWER_STACK_BOARD_HEIGHT) * 100}%`;
+const toViewportBottom = (worldBottomY: number, cameraY: number): string => {
+  const screenBottomY =
+    worldBottomY - cameraY + TOWER_STACK_VIEWPORT_HEIGHT / 2;
 
-const getStackBlockCenterY = (stackIndex: number): number =>
-  TOWER_STACK_FOUNDATION_HEIGHT +
-  stackIndex * TOWER_STACK_BLOCK_HEIGHT +
-  TOWER_STACK_BLOCK_HEIGHT / 2;
+  return `${(screenBottomY / TOWER_STACK_VIEWPORT_HEIGHT) * 100}%`;
+};
 
 const TowerBoard = ({
   stack,
+  stackBaseIndex,
   activeBlockCenter,
   activeBlockCenterY,
   activeBlockWidth,
+  cameraY,
   isPlaying,
-}: TowerBoardProps) => {
-  const maxVisibleBlocks = 10;
-  const sliceStart = Math.max(0, stack.length - maxVisibleBlocks);
-  const slicedStack = stack.slice(sliceStart);
-  const stackOffset = sliceStart;
+  score,
+}: TowerBoardProps) => (
+  <div className="absolute inset-0 flex flex-col justify-end p-3 md:p-4">
+    <div className="relative mx-auto h-full w-full max-w-[280px]">
+      <div className="absolute inset-x-0 bottom-0 top-[8%] overflow-hidden rounded-lg border border-[#243044]/80 bg-gradient-to-b from-[#1a2433] to-[#0f1724]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
+        >
+          <span className="text-[clamp(5rem,28vw,9rem)] font-black leading-none tracking-tighter text-[#ffd166]/[0.08] tabular-nums">
+            {score}
+          </span>
+        </div>
+        <div className="absolute inset-0">
+          <div
+            className="absolute bottom-0 rounded-sm bg-gradient-to-r from-[#5a6475] to-[#3d4654] shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+            style={{
+              ...toPercentX(
+                TOWER_STACK_BOARD_WIDTH / 2,
+                TOWER_STACK_FIRST_BLOCK_WIDTH,
+              ),
+              bottom: toViewportBottom(0, cameraY),
+              height: `${(TOWER_STACK_FOUNDATION_HEIGHT / TOWER_STACK_VIEWPORT_HEIGHT) * 100}%`,
+            }}
+          />
+          {stack.map((block, index) => {
+            const centerY = getStackBlockCenterY(stackBaseIndex, index);
+            const position = toPercentX(block.center, block.width);
 
-  return (
-    <div className="absolute inset-0 flex flex-col justify-end p-3 md:p-4">
-      <div className="relative mx-auto h-full w-full max-w-[280px]">
-        <div className="absolute inset-x-0 bottom-0 top-[8%] overflow-hidden rounded-lg border border-[#243044]/80 bg-gradient-to-b from-[#1a2433] to-[#0f1724]">
-          <div className="absolute inset-0">
-            <div
-              className="absolute bottom-0 rounded-sm bg-gradient-to-r from-[#5a6475] to-[#3d4654] shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
-              style={{
-                ...toPercentX(
-                  TOWER_STACK_BOARD_WIDTH / 2,
-                  TOWER_STACK_FIRST_BLOCK_WIDTH,
-                ),
-                height: `${(TOWER_STACK_FOUNDATION_HEIGHT / TOWER_STACK_BOARD_HEIGHT) * 100}%`,
-              }}
-            />
-            {slicedStack.map((block, index) => {
-              const stackIndex = stackOffset + index;
-              const centerY = getStackBlockCenterY(stackIndex);
-              const position = toPercentX(block.center, block.width);
-
-              return (
-                <div
-                  className="absolute rounded-sm bg-gradient-to-r from-[#4f7cff] to-[#1e4bd2] shadow-[0_2px_8px_rgba(30,75,210,0.35)]"
-                  key={`${block.center}-${block.width}-${stackIndex}`}
-                  style={{
-                    ...position,
-                    bottom: toPercentBottom(centerY),
-                    height: `${(TOWER_STACK_BLOCK_HEIGHT / TOWER_STACK_BOARD_HEIGHT) * 100}%`,
-                  }}
-                />
-              );
-            })}
-            {isPlaying ? (
+            return (
               <div
-                className="absolute rounded-sm bg-gradient-to-r from-[#ffd166] to-[#f59e0b] shadow-[0_4px_12px_rgba(245,158,11,0.4)]"
+                className="absolute rounded-sm bg-gradient-to-r from-[#4f7cff] to-[#1e4bd2] shadow-[0_2px_8px_rgba(30,75,210,0.35)]"
+                key={`${block.center}-${block.width}-${stackBaseIndex + index}`}
                 style={{
-                  ...toPercentX(activeBlockCenter, activeBlockWidth),
-                  bottom: toPercentBottom(activeBlockCenterY),
-                  height: `${(TOWER_STACK_BLOCK_HEIGHT / TOWER_STACK_BOARD_HEIGHT) * 100}%`,
+                  ...position,
+                  bottom: toViewportBottom(
+                    centerY - TOWER_STACK_BLOCK_HEIGHT / 2,
+                    cameraY,
+                  ),
+                  height: `${(TOWER_STACK_BLOCK_HEIGHT / TOWER_STACK_VIEWPORT_HEIGHT) * 100}%`,
                 }}
               />
-            ) : null}
-          </div>
+            );
+          })}
+          {isPlaying ? (
+            <div
+              className="absolute rounded-sm bg-gradient-to-r from-[#ffd166] to-[#f59e0b] shadow-[0_4px_12px_rgba(245,158,11,0.4)]"
+              style={{
+                ...toPercentX(activeBlockCenter, activeBlockWidth),
+                bottom: toViewportBottom(
+                  activeBlockCenterY - TOWER_STACK_BLOCK_HEIGHT / 2,
+                  cameraY,
+                ),
+                height: `${(TOWER_STACK_BLOCK_HEIGHT / TOWER_STACK_VIEWPORT_HEIGHT) * 100}%`,
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);

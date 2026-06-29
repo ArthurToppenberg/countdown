@@ -15,8 +15,15 @@ export const TOWER_STACK_INITIAL_SPEED = 0.055;
 export const TOWER_STACK_FALL_SPEED = 0.1;
 export const TOWER_STACK_SPEED_INCREASE = 1.06;
 export const TOWER_STACK_MIN_OVERLAP_RATIO = 0.22;
+export const TOWER_STACK_VIEWPORT_HEIGHT = TOWER_STACK_BOARD_HEIGHT * 0.92;
+export const TOWER_STACK_CAMERA_FOCUS_PADDING = 14;
+export const TOWER_STACK_CAMERA_LERP_RATE = 0.004;
+export const TOWER_STACK_CAMERA_BASE_DRIFT = 0.000018;
+export const TOWER_STACK_CAMERA_DRIFT_PER_BLOCK = 0.0000025;
 
 export type TowerStackPhase = "ready" | "playing" | "ended";
+
+export type TowerStackFailureReason = "miss" | "collapse";
 
 export type TowerStackBlockPhase = "moving" | "falling";
 
@@ -31,6 +38,7 @@ export type TowerStackPublicState = {
   attemptScore: number;
   phase: TowerStackPhase;
   stack: TowerStackBlock[];
+  stackBaseIndex: number;
   blockWidth: number;
   blockCenter: number;
   blockCenterY: number;
@@ -40,7 +48,9 @@ export type TowerStackPublicState = {
   anchorAt: number;
   phaseOffset: number;
   speed: number;
+  cameraY: number;
   lastDropMissed: boolean;
+  lastFailureReason: TowerStackFailureReason | null;
 };
 
 export type TowerStackSession = {
@@ -49,6 +59,7 @@ export type TowerStackSession = {
   attemptScore: number;
   phase: TowerStackPhase;
   stack: TowerStackBlock[];
+  stackBaseIndex: number;
   blockWidth: number;
   blockPhase: TowerStackBlockPhase;
   lockedCenter: number | null;
@@ -56,7 +67,10 @@ export type TowerStackSession = {
   anchorAt: number;
   phaseOffset: number;
   speed: number;
+  cameraY: number;
+  cameraUpdatedAt: number;
   lastDropMissed: boolean;
+  lastFailureReason: TowerStackFailureReason | null;
 };
 
 export type TowerStackActionResult =
@@ -66,5 +80,6 @@ export type TowerStackActionResult =
 export type TowerStackActions = {
   dropBlock: () => Promise<TowerStackActionResult>;
   settleBlock: () => Promise<TowerStackActionResult>;
+  tick: () => Promise<TowerStackActionResult>;
   reset: () => Promise<TowerStackActionResult>;
 };

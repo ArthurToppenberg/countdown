@@ -1,6 +1,10 @@
 import {
   TOWER_STACK_BLOCK_HEIGHT,
   TOWER_STACK_BOARD_WIDTH,
+  TOWER_STACK_CAMERA_BASE_DRIFT,
+  TOWER_STACK_CAMERA_DRIFT_PER_BLOCK,
+  TOWER_STACK_CAMERA_FOCUS_PADDING,
+  TOWER_STACK_CAMERA_LERP_RATE,
   TOWER_STACK_FALL_SPEED,
   TOWER_STACK_FIRST_BLOCK_WIDTH,
   TOWER_STACK_FOUNDATION_HEIGHT,
@@ -9,6 +13,7 @@ import {
   TOWER_STACK_MIN_OVERLAP_RATIO,
   TOWER_STACK_SPAWN_Y,
   TOWER_STACK_SPEED_INCREASE,
+  TOWER_STACK_VIEWPORT_HEIGHT,
   type TowerStackBlock,
   type TowerStackPublicState,
   type TowerStackSession,
@@ -73,38 +78,130 @@ export const getCurrentPhaseOffset = (
   return ((totalTravel % (2 * range)) + 2 * range) % (2 * range);
 };
 
-export const getStackTopY = (stackLength: number): number =>
-  TOWER_STACK_FOUNDATION_HEIGHT + stackLength * TOWER_STACK_BLOCK_HEIGHT;
+export const getStackBlockCenterY = (
+  stackBaseIndex: number,
+  arrayIndex: number,
+): number =>
+  TOWER_STACK_FOUNDATION_HEIGHT +
+  (stackBaseIndex + arrayIndex) * TOWER_STACK_BLOCK_HEIGHT +
+  TOWER_STACK_BLOCK_HEIGHT / 2;
 
-export const getFallTargetCenterY = (stackLength: number): number =>
-  getStackTopY(stackLength) + TOWER_STACK_BLOCK_HEIGHT / 2;
+export const getStackTopY = (
+  stackBaseIndex: number,
+  stackLength: number,
+): number =>
+  TOWER_STACK_FOUNDATION_HEIGHT +
+  (stackBaseIndex + stackLength) * TOWER_STACK_BLOCK_HEIGHT;
 
-export const getFallDistance = (stackLength: number): number =>
-  TOWER_STACK_SPAWN_Y - getFallTargetCenterY(stackLength);
+export const getFallTargetCenterY = (
+  stackBaseIndex: number,
+  stackLength: number,
+): number =>
+  getStackTopY(stackBaseIndex, stackLength) + TOWER_STACK_BLOCK_HEIGHT / 2;
 
-export const getFallDuration = (stackLength: number): number =>
-  getFallDistance(stackLength) / TOWER_STACK_FALL_SPEED;
+export const getFallDistance = (
+  stackBaseIndex: number,
+  stackLength: number,
+): number =>
+  TOWER_STACK_SPAWN_Y - getFallTargetCenterY(stackBaseIndex, stackLength);
+
+export const getFallDuration = (
+  stackBaseIndex: number,
+  stackLength: number,
+): number =>
+  getFallDistance(stackBaseIndex, stackLength) / TOWER_STACK_FALL_SPEED;
 
 export const getFallingBlockCenterY = (
+  stackBaseIndex: number,
   stackLength: number,
   fallStartedAt: number,
   now: number,
 ): number => {
-  const targetY = getFallTargetCenterY(stackLength);
+  const targetY = getFallTargetCenterY(stackBaseIndex, stackLength);
   const elapsed = (now - fallStartedAt) * TOWER_STACK_FALL_SPEED;
 
   return Math.max(targetY, TOWER_STACK_SPAWN_Y - elapsed);
 };
 
 export const isFallComplete = (
+  stackBaseIndex: number,
   stackLength: number,
   fallStartedAt: number,
   now: number,
 ): boolean => {
   const elapsed = (now - fallStartedAt) * TOWER_STACK_FALL_SPEED;
 
-  return elapsed >= getFallDistance(stackLength);
+  return elapsed >= getFallDistance(stackBaseIndex, stackLength);
 };
+
+export const getCameraTargetY = (
+  stackBaseIndex: number,
+  stackLength: number,
+): number => {
+  const apexCenterY = getFallTargetCenterY(stackBaseIndex, stackLength);
+  const spawnHeadroom = TOWER_STACK_SPAWN_Y - apexCenterY;
+  const focusOffset =
+    spawnHeadroom > 0
+      ? Math.min(TOWER_STACK_CAMERA_FOCUS_PADDING, spawnHeadroom * 0.45)
+      : TOWER_STACK_CAMERA_FOCUS_PADDING;
+  const minCenter = TOWER_STACK_VIEWPORT_HEIGHT / 2;
+
+  return Math.max(minCenter, apexCenterY + focusOffset);
+};
+
+export const getKillZoneLimit = (cameraY: number): number =>
+  cameraY - TOWER_STACK_VIEWPORT_HEIGHT / 2;
+
+export const advanceCameraY = (
+  currentY: number,
+  targetY: number,
+  stackLength: number,
+  elapsedMs: number,
+): number => {
+  const lerpFactor = 1 - Math.exp(-TOWER_STACK_CAMERA_LERP_RATE * elapsedMs);
+  const lerpedY = currentY + (targetY - currentY) * lerpFactor;
+  const drift =
+    (TOWER_STACK_CAMERA_BASE_DRIFT +
+      stackLength * TOWER_STACK_CAMERA_DRIFT_PER_BLOCK) *
+    elapsedMs;
+  const minCenter = TOWER_STACK_VIEWPORT_HEIGHT / 2;
+
+  return Math.max(minCenter, Math.max(lerpedY, currentY + drift));
+};
+
+export const isPlacementSurfaceConsumed = (
+  stackBaseIndex: number,
+  stackLength: number,
+  yLimit: number,
+): boolean => getStackTopY(stackBaseIndex, stackLength) < yLimit;
+
+export const cullStackByKillZone = (
+  stack: TowerStackBlock[],
+  stackBaseIndex: number,
+  yLimit: number,
+): { stack: TowerStackBlock[]; stackBaseIndex: number } => {
+  const culledStack = [...stack];
+  let nextBaseIndex = stackBaseIndex;
+
+  while (culledStack.length > 0) {
+    const bottomY =
+      getStackBlockCenterY(nextBaseIndex, 0) - TOWER_STACK_BLOCK_HEIGHT / 2;
+
+    if (bottomY >= yLimit) {
+      break;
+    }
+
+    culledStack.shift();
+    nextBaseIndex += 1;
+  }
+
+  return {
+    stack: culledStack,
+    stackBaseIndex: nextBaseIndex,
+  };
+};
+
+export const getInitialCameraY = (): number => TOWER_STACK_VIEWPORT_HEIGHT / 2;
 
 export const createDefaultSession = (): TowerStackSession => ({
   attemptsRemaining: TOWER_STACK_MAX_ATTEMPTS,
@@ -112,6 +209,7 @@ export const createDefaultSession = (): TowerStackSession => ({
   attemptScore: 0,
   phase: "ready",
   stack: [],
+  stackBaseIndex: 0,
   blockWidth: TOWER_STACK_FIRST_BLOCK_WIDTH,
   blockPhase: "moving",
   lockedCenter: null,
@@ -119,7 +217,10 @@ export const createDefaultSession = (): TowerStackSession => ({
   anchorAt: 0,
   phaseOffset: 0,
   speed: TOWER_STACK_INITIAL_SPEED,
+  cameraY: getInitialCameraY(),
+  cameraUpdatedAt: 0,
   lastDropMissed: false,
+  lastFailureReason: null,
 });
 
 export const startAttempt = (
@@ -129,6 +230,7 @@ export const startAttempt = (
   ...session,
   phase: "playing",
   stack: [],
+  stackBaseIndex: 0,
   attemptScore: 0,
   blockWidth: TOWER_STACK_FIRST_BLOCK_WIDTH,
   blockPhase: "moving",
@@ -137,7 +239,10 @@ export const startAttempt = (
   anchorAt: now,
   phaseOffset: 0,
   speed: TOWER_STACK_INITIAL_SPEED,
+  cameraY: getInitialCameraY(),
+  cameraUpdatedAt: now,
   lastDropMissed: false,
+  lastFailureReason: null,
 });
 
 type PlacementResult =
@@ -198,10 +303,14 @@ export const finishAttemptAfterMiss = (
       attemptsRemaining: 0,
       phase: "ended",
       stack: [],
+      stackBaseIndex: 0,
       blockPhase: "moving",
       lockedCenter: null,
       fallStartedAt: null,
+      cameraY: getInitialCameraY(),
+      cameraUpdatedAt: 0,
       lastDropMissed: true,
+      lastFailureReason: "miss",
     };
   }
 
@@ -210,10 +319,52 @@ export const finishAttemptAfterMiss = (
     attemptsRemaining,
     phase: "ready",
     stack: [],
+    stackBaseIndex: 0,
     blockPhase: "moving",
     lockedCenter: null,
     fallStartedAt: null,
+    cameraY: getInitialCameraY(),
+    cameraUpdatedAt: 0,
     lastDropMissed: true,
+    lastFailureReason: "miss",
+  };
+};
+
+export const finishAttemptAfterCollapse = (
+  session: TowerStackSession,
+): TowerStackSession => {
+  const attemptsRemaining = session.attemptsRemaining - 1;
+
+  if (attemptsRemaining <= 0) {
+    return {
+      ...session,
+      attemptsRemaining: 0,
+      phase: "ended",
+      stack: [],
+      stackBaseIndex: 0,
+      blockPhase: "moving",
+      lockedCenter: null,
+      fallStartedAt: null,
+      cameraY: getInitialCameraY(),
+      cameraUpdatedAt: 0,
+      lastDropMissed: true,
+      lastFailureReason: "collapse",
+    };
+  }
+
+  return {
+    ...session,
+    attemptsRemaining,
+    phase: "ready",
+    stack: [],
+    stackBaseIndex: 0,
+    blockPhase: "moving",
+    lockedCenter: null,
+    fallStartedAt: null,
+    cameraY: getInitialCameraY(),
+    cameraUpdatedAt: 0,
+    lastDropMissed: true,
+    lastFailureReason: "collapse",
   };
 };
 
@@ -245,6 +396,58 @@ export const applySuccessfulDrop = (
     phaseOffset: nextPhaseOffset,
     speed: nextSpeed,
     lastDropMissed: false,
+    lastFailureReason: null,
+  };
+};
+
+export const advanceTowerStackWorld = (
+  session: TowerStackSession,
+  now: number,
+): TowerStackSession => {
+  if (session.phase !== "playing") {
+    return session;
+  }
+
+  const elapsed = now - session.cameraUpdatedAt;
+
+  if (elapsed <= 0) {
+    return session;
+  }
+
+  const targetY = getCameraTargetY(session.stackBaseIndex, session.stack.length);
+  const cameraY = advanceCameraY(
+    session.cameraY,
+    targetY,
+    session.stack.length,
+    elapsed,
+  );
+  const yLimit = getKillZoneLimit(cameraY);
+  const culled = cullStackByKillZone(
+    session.stack,
+    session.stackBaseIndex,
+    yLimit,
+  );
+
+  if (
+    isPlacementSurfaceConsumed(
+      culled.stackBaseIndex,
+      culled.stack.length,
+      yLimit,
+    )
+  ) {
+    return finishAttemptAfterCollapse({
+      ...session,
+      ...culled,
+      cameraY,
+      cameraUpdatedAt: now,
+    });
+  }
+
+  return {
+    ...session,
+    ...culled,
+    cameraY,
+    cameraUpdatedAt: now,
   };
 };
 
@@ -261,6 +464,7 @@ const getBlockCenterY = (
     session.fallStartedAt !== null
   ) {
     return getFallingBlockCenterY(
+      session.stackBaseIndex,
       session.stack.length,
       session.fallStartedAt,
       now,
@@ -300,6 +504,7 @@ export const toPublicState = (
   attemptScore: session.attemptScore,
   phase: session.phase,
   stack: session.stack,
+  stackBaseIndex: session.stackBaseIndex,
   blockWidth: session.blockWidth,
   blockCenter: getBlockCenterX(session, now),
   blockCenterY: getBlockCenterY(session, now),
@@ -309,5 +514,7 @@ export const toPublicState = (
   anchorAt: session.anchorAt,
   phaseOffset: session.phaseOffset,
   speed: session.speed,
+  cameraY: session.cameraY,
   lastDropMissed: session.lastDropMissed,
+  lastFailureReason: session.lastFailureReason,
 });

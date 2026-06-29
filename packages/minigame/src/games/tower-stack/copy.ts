@@ -7,7 +7,7 @@ export const TOWER_STACK_COPY = {
     `${remaining}/${TOWER_STACK_MAX_ATTEMPTS} tilbage`,
   howToPlayTitle: "Sådan spiller du",
   howToPlay:
-    "Start tårnet og sigt med den bevægelige blok. Tryk igen for at slippe den ned. Rammer du skævt, skæres blokken til — misser du helt, er forsøget slut. Hver vellykket blok giver 1 point.",
+    "Start tårnet og sigt med den bevægelige blok. Tryk igen for at slippe den ned. Rammer du skævt, skæres blokken til — misser du helt, er forsøget slut. Kameraet følger tårnet opad, og blokke der forsvinder under kanten forsvinder fra spillet. Byg hurtigt nok, ellers mister du fundamentet. Hver vellykket blok giver 1 point.",
   gotIt: "Forstået",
   statAttempts: "Forsøg",
   statTotal: "Point",
@@ -20,6 +20,12 @@ export const TOWER_STACK_COPY = {
       ? `Du stablede ${blocks} ${blocks === 1 ? "blok" : "blokke"} i dette forsøg.`
       : "Blokken faldt ved siden af — prøv igen.",
   missButton: "Næste forsøg",
+  collapseTitle: "Tårnet kollapsede!",
+  collapseDescription: (blocks: number): string =>
+    blocks > 0
+      ? `Fundamentet forsvandt under kanten. Du nåede ${blocks} ${blocks === 1 ? "blok" : "blokke"} i dette forsøg.`
+      : "Fundamentet forsvandt under kanten, før du nåede at stable.",
+  collapseButton: "Næste forsøg",
   gameOver: "Spil slut",
   gameOverDescription: (score: number): string =>
     `Du brugte alle ${TOWER_STACK_MAX_ATTEMPTS} forsøg og endte med ${score} point.`,

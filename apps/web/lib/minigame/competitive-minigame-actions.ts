@@ -4,6 +4,7 @@ import {
   competitiveResetNotAllowed as towerStackCompetitiveResetNotAllowed,
   dropCompetitiveTowerStackBlock,
   settleCompetitiveTowerStackBlock,
+  tickCompetitiveTowerStack,
 } from "./competitive-tower-stack-actions";
 
 export const getCompetitiveMinigameActions = (
@@ -13,6 +14,7 @@ export const getCompetitiveMinigameActions = (
     return {
       dropBlock: dropCompetitiveTowerStackBlock,
       settleBlock: settleCompetitiveTowerStackBlock,
+      tick: tickCompetitiveTowerStack,
       reset: towerStackCompetitiveResetNotAllowed,
     };
   }

@@ -4,6 +4,7 @@ import {
   clearTowerStackSession,
   dropTowerStackBlock,
   settleTowerStackBlock,
+  tickTowerStack,
   TOWER_STACK_ID,
   type TowerStackActionResult,
   type TowerStackPublicState,
@@ -77,6 +78,10 @@ export const dropCompetitiveTowerStackBlock =
 export const settleCompetitiveTowerStackBlock =
   async (): Promise<TowerStackActionResult> =>
     withCompetitiveGuards(() => settleTowerStackBlock("competitive"));
+
+export const tickCompetitiveTowerStack =
+  async (): Promise<TowerStackActionResult> =>
+    withCompetitiveGuards(() => tickTowerStack("competitive"));
 
 const competitiveResetNotAllowed =
   async (): Promise<TowerStackActionResult> => {

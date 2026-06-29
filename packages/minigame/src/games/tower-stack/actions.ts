@@ -9,6 +9,7 @@ import {
 import { getTowerStackCookieName } from "./cookie";
 import { TOWER_STACK_COPY } from "./copy";
 import {
+  advanceTowerStackWorld,
   applySuccessfulDrop,
   createDefaultSession,
   evaluatePlacement,
@@ -68,6 +69,8 @@ const isValidSession = (
       value.phase === "ended") &&
     Array.isArray(value.stack) &&
     isValidStack(value.stack) &&
+    typeof value.stackBaseIndex === "number" &&
+    Number.isFinite(value.stackBaseIndex) &&
     typeof value.blockWidth === "number" &&
     Number.isFinite(value.blockWidth) &&
     (value.blockPhase === "moving" || value.blockPhase === "falling") &&
@@ -83,7 +86,14 @@ const isValidSession = (
     Number.isFinite(value.phaseOffset) &&
     typeof value.speed === "number" &&
     Number.isFinite(value.speed) &&
-    typeof value.lastDropMissed === "boolean"
+    typeof value.cameraY === "number" &&
+    Number.isFinite(value.cameraY) &&
+    typeof value.cameraUpdatedAt === "number" &&
+    Number.isFinite(value.cameraUpdatedAt) &&
+    typeof value.lastDropMissed === "boolean" &&
+    (value.lastFailureReason === null ||
+      value.lastFailureReason === "miss" ||
+      value.lastFailureReason === "collapse")
   );
 };
 
@@ -113,18 +123,24 @@ const failure = (
   state: toPublicState(session, now),
 });
 
+const withAdvancedWorld = (
+  session: TowerStackSession,
+  now: number,
+): TowerStackSession => advanceTowerStackWorld(session, now);
+
 export const getTowerStackState = async (
   mode: MinigamePlayMode = "practice",
 ): Promise<TowerStackPublicState> => {
+  const now = Date.now();
   const session = await readSession(mode);
-  return toPublicState(session, Date.now());
+  return toPublicState(session, now);
 };
 
 export const dropTowerStackBlock = async (
   mode: MinigamePlayMode = "practice",
 ): Promise<TowerStackActionResult> => {
   const now = Date.now();
-  const session = await readSession(mode);
+  const session = withAdvancedWorld(await readSession(mode), now);
 
   if (session.phase === "ended") {
     return failure(session, TOWER_STACK_COPY.gameOverNoAttempts, now);
@@ -149,11 +165,20 @@ export const dropTowerStackBlock = async (
   return success(nextSession, now);
 };
 
+export const tickTowerStack = async (
+  mode: MinigamePlayMode = "practice",
+): Promise<TowerStackActionResult> => {
+  const now = Date.now();
+  const session = withAdvancedWorld(await readSession(mode), now);
+  await persistSession(mode, session);
+  return success(session, now);
+};
+
 export const settleTowerStackBlock = async (
   mode: MinigamePlayMode = "practice",
 ): Promise<TowerStackActionResult> => {
   const now = Date.now();
-  const session = await readSession(mode);
+  const session = withAdvancedWorld(await readSession(mode), now);
 
   if (session.phase !== "playing" || session.blockPhase !== "falling") {
     return failure(session, TOWER_STACK_COPY.cannotSettleNow, now);
@@ -164,7 +189,12 @@ export const settleTowerStackBlock = async (
   }
 
   if (
-    !isFallComplete(session.stack.length, session.fallStartedAt, now)
+    !isFallComplete(
+      session.stackBaseIndex,
+      session.stack.length,
+      session.fallStartedAt,
+      now,
+    )
   ) {
     return failure(session, TOWER_STACK_COPY.fallNotComplete, now);
   }

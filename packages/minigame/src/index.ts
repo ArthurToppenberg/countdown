@@ -23,6 +23,7 @@ export {
   getTowerStackState,
   resetTowerStack,
   settleTowerStackBlock,
+  tickTowerStack,
   towerStack,
   type TowerStackActionResult,
   type TowerStackActions,

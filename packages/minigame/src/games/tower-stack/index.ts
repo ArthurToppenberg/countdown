@@ -5,6 +5,7 @@ export {
   getTowerStackState,
   resetTowerStack,
   settleTowerStackBlock,
+  tickTowerStack,
 } from "./actions";
 export { TowerStackGame } from "./tower-stack-game";
 export type {
