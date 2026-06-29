@@ -3,8 +3,6 @@ import { TOWER_STACK_MAX_ATTEMPTS } from "./types";
 export const TOWER_STACK_COPY = {
   title: "Tower Stack",
   subtitle: `${TOWER_STACK_MAX_ATTEMPTS} forsøg · stabl blokke oven på hinanden`,
-  attemptsBadge: (remaining: number): string =>
-    `${remaining}/${TOWER_STACK_MAX_ATTEMPTS} tilbage`,
   howToPlayTitle: "Sådan spiller du",
   howToPlay:
     "Byg tårnet ved at placere blokke præcist før de skæres til eller forsvinder i bunden, mens kameraet stiger.",

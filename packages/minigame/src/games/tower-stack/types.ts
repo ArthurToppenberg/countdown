@@ -10,6 +10,12 @@ export const TOWER_STACK_SPEED_INCREASE = 1.06;
 export const TOWER_STACK_MIN_OVERLAP_RATIO = 0.22;
 export const TOWER_STACK_VIEWPORT_HEIGHT = TOWER_STACK_BOARD_HEIGHT * 0.92;
 
+// Extra distance below the visible kill zone that a block keeps falling before
+// it is removed from the stack, so blocks slide fully out of view instead of
+// popping out at the bottom edge. Collapse detection still uses the visible
+// edge, so gameplay difficulty is unchanged.
+export const TOWER_STACK_CULL_MARGIN = TOWER_STACK_BLOCK_HEIGHT;
+
 // A new block always appears this many world units above the current tower top,
 // so the fall distance stays constant no matter how tall the tower gets.
 export const TOWER_STACK_SPAWN_GAP = 50;

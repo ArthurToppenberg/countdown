@@ -6,6 +6,7 @@ import {
   TOWER_STACK_CAMERA_LERP_RATE,
   TOWER_STACK_CAMERA_MAX_STEP_MS,
   TOWER_STACK_CAMERA_TOP_FRACTION,
+  TOWER_STACK_CULL_MARGIN,
   TOWER_STACK_FALL_SPEED,
   TOWER_STACK_FIRST_BLOCK_WIDTH,
   TOWER_STACK_FOUNDATION_HEIGHT,
@@ -462,7 +463,7 @@ export const advanceTowerStackWorld = (
   const culled = cullStackByKillZone(
     session.stack,
     session.stackBaseIndex,
-    yLimit,
+    yLimit - TOWER_STACK_CULL_MARGIN,
   );
 
   const wholeStackConsumed =

@@ -11,6 +11,7 @@ import {
   TOWER_STACK_BOARD_WIDTH,
   TOWER_STACK_FIRST_BLOCK_WIDTH,
   TOWER_STACK_FOUNDATION_HEIGHT,
+  TOWER_STACK_MAX_ATTEMPTS,
   TOWER_STACK_VIEWPORT_HEIGHT,
   type TowerStackActions,
   type TowerStackBlock,
@@ -89,17 +90,12 @@ export const TowerStackGame = ({
     <div
       className={`flex flex-col overflow-hidden bg-[#0b0f14] px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] text-[#e8eef7] md:px-5 md:py-5 ${shellClassName}`}
     >
-      <header className="shrink-0 flex justify-center pb-2 md:pb-3">
-        <div className="rounded-full border border-[#243044] bg-white/5 px-3 py-1.5 text-xs text-[#8fa3bf] md:px-4 md:py-2 md:text-sm">
-          {TOWER_STACK_COPY.attemptsBadge(view.attemptsRemaining)}
-        </div>
-      </header>
-
       <section className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[#243044] bg-[#121923] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
         <TowerBoard
           activeBlockCenter={view.blockCenter}
           activeBlockCenterY={view.blockCenterY}
           activeBlockWidth={view.blockWidth}
+          attemptsRemaining={view.attemptsRemaining}
           cameraY={view.cameraY}
           isPlaying={isPlaying}
           score={view.totalScore}
@@ -232,10 +228,28 @@ type TowerBoardProps = {
   activeBlockCenter: number;
   activeBlockCenterY: number;
   activeBlockWidth: number;
+  attemptsRemaining: number;
   cameraY: number;
   isPlaying: boolean;
   score: number;
 };
+
+const HeartIcon = ({ filled }: { filled: boolean }) => (
+  <svg
+    aria-hidden
+    className={
+      filled
+        ? "h-7 w-7 text-[#ff4d6d]/[0.22] md:h-9 md:w-9"
+        : "h-7 w-7 text-[#8fa3bf]/[0.12] md:h-9 md:w-9"
+    }
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={filled ? 0 : 2}
+    viewBox="0 0 24 24"
+  >
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+  </svg>
+);
 
 const toPercentX = (center: number, width: number): { left: string; width: string } => ({
   left: `${((center - width / 2) / TOWER_STACK_BOARD_WIDTH) * 100}%`,
@@ -255,6 +269,7 @@ const TowerBoard = ({
   activeBlockCenter,
   activeBlockCenterY,
   activeBlockWidth,
+  attemptsRemaining,
   cameraY,
   isPlaying,
   score,
@@ -262,6 +277,14 @@ const TowerBoard = ({
   <div className="absolute inset-0 flex flex-col justify-end p-3 md:p-4">
     <div className="relative mx-auto h-full w-full max-w-[280px]">
       <div className="absolute inset-x-0 bottom-0 top-[8%] overflow-hidden rounded-lg border border-[#243044]/80 bg-gradient-to-b from-[#1a2433] to-[#0f1724]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 flex justify-center gap-2 p-3 select-none md:gap-3 md:p-4"
+        >
+          {Array.from({ length: TOWER_STACK_MAX_ATTEMPTS }).map((_, index) => (
+            <HeartIcon filled={index < attemptsRemaining} key={index} />
+          ))}
+        </div>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
