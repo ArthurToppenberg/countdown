@@ -1,0 +1,23 @@
+name: Send daglig email (scheduled)
+
+on:
+  schedule:
+    # 04:00 and 05:00 UTC cover 06:00 Copenhagen in CEST and CET; the endpoint only
+    # sends during the 06:00 Copenhagen window, so the other run is a no-op.
+    - cron: "0 4,5 * * *"
+
+jobs:
+  send-daglig-email-scheduled:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trigger scheduled daily email
+        uses: ./.github/actions/trigger-daglig-endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        with:
+          endpoint: api/cron/daglig/scheduled
+          allow-outside-window: "true"

@@ -1,0 +1,56 @@
+name: Trigger daglig endpoint
+description: POST to a daglig cron endpoint and validate the JSON response
+inputs:
+  endpoint:
+    description: Path after APP_URL (e.g. api/cron/daglig/scheduled)
+    required: true
+  allow-outside-window:
+    description: Treat outside-window skip as success
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        APP_URL: ${{ env.APP_URL }}
+        CRON_SECRET: ${{ env.CRON_SECRET }}
+        ENDPOINT: ${{ inputs.endpoint }}
+        ALLOW_OUTSIDE_WINDOW: ${{ inputs.allow-outside-window }}
+      run: |
+        set -euo pipefail
+        url="${APP_URL%/}/${ENDPOINT}"
+        status=$(curl --silent --show-error --fail-with-body \
+          --output /tmp/daglig-response.json --write-out "%{http_code}" \
+          --request POST \
+          --header "Authorization: Bearer ${CRON_SECRET}" \
+          --header "Cache-Control: no-cache" \
+          --header "Pragma: no-cache" \
+          "${url}")
+        echo "HTTP ${status}"
+        cat /tmp/daglig-response.json
+        echo
+
+        if jq -e 'has("sent") and (.sent | type) == "boolean" and .sent == false' \
+          /tmp/daglig-response.json >/dev/null; then
+          reason=$(jq -r '.reason // "unknown"' /tmp/daglig-response.json)
+          case "${reason}" in
+            outside-window)
+              if [ "${ALLOW_OUTSIDE_WINDOW}" = "true" ]; then
+                echo "::notice::Daily email skipped (${reason})"
+              else
+                echo "::error::Daily email was not sent (${reason})"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Daily email was not sent (${reason})"
+              exit 1
+              ;;
+          esac
+        fi
+
+        if jq -e 'has("error")' /tmp/daglig-response.json >/dev/null; then
+          echo "::error::$(jq -r '.error' /tmp/daglig-response.json)"
+          exit 1
+        fi

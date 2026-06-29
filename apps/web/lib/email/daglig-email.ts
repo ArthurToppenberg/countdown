@@ -7,7 +7,6 @@ import {
   type DagligEmailEventProps,
 } from "@countdown/email";
 
-import { assertNoActiveEventForEmail } from "@/lib/active-event";
 import { logger } from "@/lib/logger";
 import { getMinigamePointsLeaderboard } from "@/lib/minigame/daily-minigame";
 import { getNextEvent } from "@/lib/next-event";
@@ -61,21 +60,10 @@ const sendDagligEmailBatch = async (
   return result;
 };
 
-type SendDagligEmailToUsersOptions = {
-  skipActiveEventCheck?: boolean;
-};
-
-const sendDagligEmailToUsers = async (
-  where: {
-    password: { not: null };
-    role?: "ADMIN";
-  },
-  options: SendDagligEmailToUsersOptions = {},
-): Promise<DagligEmailBatchResult> => {
-  if (!options.skipActiveEventCheck) {
-    await assertNoActiveEventForEmail();
-  }
-
+const sendDagligEmailToUsers = async (where: {
+  password: { not: null };
+  role?: "ADMIN";
+}): Promise<DagligEmailBatchResult> => {
   const eventProps = await buildDagligEmailProps();
 
   if (!eventProps) {
@@ -115,8 +103,6 @@ export const buildDagligEmailProps = async (): Promise<
 export const sendDagligEmail = async (
   input: DagligEmailInput,
 ): Promise<void> => {
-  await assertNoActiveEventForEmail();
-
   const eventProps = await buildDagligEmailProps();
 
   if (!eventProps) {
@@ -130,16 +116,12 @@ export const sendDagligEmailToActiveUsers =
   async (): Promise<DagligEmailBatchResult> =>
     sendDagligEmailToUsers({ password: { not: null } });
 
-export const sendDagligEmailToAdminUsers = async (
-  options?: SendDagligEmailToUsersOptions,
-): Promise<DagligEmailBatchResult> =>
-  sendDagligEmailToUsers(
-    {
+export const sendDagligEmailToAdminUsers =
+  async (): Promise<DagligEmailBatchResult> =>
+    sendDagligEmailToUsers({
       role: "ADMIN",
       password: { not: null },
-    },
-    options,
-  );
+    });
 
 export {
   getDagligEmailSubject,

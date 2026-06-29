@@ -1,0 +1,19 @@
+name: Send daglig email (admins)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-daglig-email-admin:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send daily email to admin users
+        uses: ./.github/actions/trigger-daglig-endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        with:
+          endpoint: api/cron/daglig/admin

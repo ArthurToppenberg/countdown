@@ -8,9 +8,6 @@ export type ActiveEventInfo = {
 export const ACTIVE_EVENT_MINIGAME_ERROR =
   "Minigames er lukket mens en begivenhed er i gang.";
 
-export const ACTIVE_EVENT_EMAIL_ERROR =
-  "Daglig e-mail kan ikke sendes mens en begivenhed er i gang.";
-
 export const getActiveEvent = async (
   now: Date = new Date(),
 ): Promise<ActiveEventInfo | undefined> => {
@@ -40,13 +37,5 @@ export const assertNoActiveEventForMinigame = async (): Promise<void> => {
 
   if (activeEvent) {
     throw new Error(ACTIVE_EVENT_MINIGAME_ERROR);
-  }
-};
-
-export const assertNoActiveEventForEmail = async (): Promise<void> => {
-  const activeEvent = await getActiveEvent();
-
-  if (activeEvent) {
-    throw new Error(ACTIVE_EVENT_EMAIL_ERROR);
   }
 };
