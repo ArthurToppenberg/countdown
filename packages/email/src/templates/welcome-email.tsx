@@ -26,7 +26,7 @@ export const WelcomeEmail = ({ name, setPasswordUrl }: WelcomeEmailProps) => (
     </Text>
 
     <Text style={bodyStyle}>
-      Når du har logget ind så begynder jeg på de sjove daglige minigames hvor
+      Når du har logget ind så begynder jeg på de sjove daglige games hvor
       vi kongurere for at optjene point.
     </Text>
 

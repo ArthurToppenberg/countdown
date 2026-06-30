@@ -34,8 +34,11 @@ export const sendDagligEmail = async (
     name,
     eventName: input.eventName,
     daysRemainingLabel: input.daysRemainingLabel,
+    countdownNote: input.countdownNote,
+    seasonName: input.seasonName,
     leaderboard: input.leaderboard,
-    hasActiveMinigame: input.hasActiveMinigame,
+    weeklyLeaderName: input.weeklyLeaderName,
+    hasActiveGame: input.hasActiveGame,
   });
 
   await sendReactEmail({

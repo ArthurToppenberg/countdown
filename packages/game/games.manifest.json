@@ -1,7 +1,7 @@
 {
   "games": {
     "tower-stack": {
-      "active": false
+      "active": true
     }
   }
 }

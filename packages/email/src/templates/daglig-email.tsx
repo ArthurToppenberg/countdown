@@ -27,13 +27,53 @@ const formatPoints = (points: number): string =>
 
 const LEADERBOARD_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
+const SEASON_NAME_GOLD = "#f59e0b";
+
 export const getDagligEmailTitle = ({
-  eventName,
   daysRemainingLabel,
-}: DagligEmailEventProps): string => `${daysRemainingLabel} til ${eventName}`;
+  countdownNote,
+}: DagligEmailEventProps): string => `${daysRemainingLabel} ${countdownNote}`;
 
 export const getDagligEmailSubject = (props: DagligEmailEventProps): string =>
   getDagligEmailTitle(props);
+
+type CountdownHeroProps = Pick<
+  DagligEmailEventProps,
+  "daysRemainingLabel" | "countdownNote" | "seasonName" | "eventName"
+>;
+
+const CountdownHero = ({
+  daysRemainingLabel,
+  countdownNote,
+  seasonName,
+  eventName,
+}: CountdownHeroProps) => {
+  const isNextSeasonCountdown =
+    seasonName !== null && countdownNote === `til ${seasonName}`;
+  const showEventContext = eventName.startsWith("når ");
+
+  return (
+    <>
+      <Text style={countdownStyle}>{daysRemainingLabel}</Text>
+      {isNextSeasonCountdown ? (
+        <Text style={seasonNameLineStyle}>
+          til{" "}
+          <span style={seasonNameGoldStyle}>{seasonName}</span>
+        </Text>
+      ) : (
+        <Text style={countdownNoteStyle}>{countdownNote}</Text>
+      )}
+      {seasonName && !isNextSeasonCountdown ? (
+        <Text style={seasonNameOnlyStyle}>
+          <span style={seasonNameGoldStyle}>{seasonName}</span>
+        </Text>
+      ) : null}
+      {showEventContext ? (
+        <Text style={eventContextStyle}>{eventName}</Text>
+      ) : null}
+    </>
+  );
+};
 
 export const DagligEmail = (props: DagligEmailProps) => {
   const title = getDagligEmailTitle(props);
@@ -41,11 +81,12 @@ export const DagligEmail = (props: DagligEmailProps) => {
   return (
     <EmailLayout preview={title}>
       <Section style={heroStyle}>
-        <Text style={countdownStyle}>{props.daysRemainingLabel}</Text>
-        <Text style={tilStyle}>til</Text>
-        <Heading as="h1" style={eventNameStyle}>
-          {props.eventName}
-        </Heading>
+        <CountdownHero
+          countdownNote={props.countdownNote}
+          daysRemainingLabel={props.daysRemainingLabel}
+          eventName={props.eventName}
+          seasonName={props.seasonName}
+        />
       </Section>
 
       <Hr style={dividerStyle} />
@@ -54,10 +95,10 @@ export const DagligEmail = (props: DagligEmailProps) => {
         <>
           <Section style={leaderboardSectionStyle}>
             <Heading as="h2" style={leaderboardTitleStyle}>
-              Top 3 pointtavle
+              Sæsonens stilling
             </Heading>
             <Text style={leaderboardDescriptionStyle}>
-              Spillere med flest point i alt
+              Top 3 efter daglig placering
             </Text>
             {props.leaderboard.map((entry, index) => (
               <LeaderboardRow
@@ -66,22 +107,27 @@ export const DagligEmail = (props: DagligEmailProps) => {
                 rank={index + 1}
               />
             ))}
+            {props.weeklyLeaderName ? (
+              <Text style={weeklyLeaderStyle}>
+                🥇 Ugens fører: {props.weeklyLeaderName}
+              </Text>
+            ) : null}
           </Section>
           <Hr style={leaderboardDividerStyle} />
         </>
       ) : null}
 
-      {props.hasActiveMinigame ? (
+      {props.hasActiveGame ? (
         <>
           <Text style={centeredBodyStyle}>
             Nååår{" "}
             <span style={nameHighlightStyle}>{props.name}</span> er du klar til
-            dagens minigame.
+            dagens game.
           </Text>
 
           <Section style={buttonSectionStyle}>
             <Button href={props.gameUrl} style={buttonStyle}>
-              Spil minigame
+              Spil game
             </Button>
           </Section>
         </>
@@ -101,28 +147,50 @@ const heroStyle = {
 
 const countdownStyle = {
   color: "#18181b",
-  fontSize: "40px",
+  fontSize: "48px",
   fontWeight: "700",
-  letterSpacing: "-0.03em",
+  letterSpacing: "-0.04em",
   lineHeight: "1",
+  margin: "0 0 12px",
+};
+
+const seasonNameLineStyle = {
+  color: "#52525b",
+  fontSize: "22px",
+  fontWeight: "600",
+  letterSpacing: "-0.02em",
+  lineHeight: "1.2",
   margin: "0 0 8px",
 };
 
-const tilStyle = {
-  color: "#a1a1aa",
-  fontSize: "14px",
-  fontWeight: "500",
-  letterSpacing: "0.04em",
-  margin: "0 0 10px",
-  textTransform: "lowercase" as const,
+const seasonNameGoldStyle = {
+  color: SEASON_NAME_GOLD,
+  fontWeight: "700",
 };
 
-const eventNameStyle = {
-  color: "#18181b",
+const seasonNameOnlyStyle = {
   fontSize: "22px",
-  fontWeight: "600",
+  fontWeight: "700",
+  letterSpacing: "-0.02em",
+  lineHeight: "1.2",
+  margin: "0 0 6px",
+};
+
+const countdownNoteStyle = {
+  color: "#71717a",
+  fontSize: "16px",
+  fontWeight: "500",
+  letterSpacing: "0.01em",
   lineHeight: "1.3",
-  margin: "0",
+  margin: "0 0 6px",
+};
+
+const eventContextStyle = {
+  color: "#a1a1aa",
+  fontSize: "13px",
+  fontWeight: "500",
+  lineHeight: "1.4",
+  margin: "8px 0 0",
 };
 
 const dividerStyle = {
@@ -139,7 +207,8 @@ const leaderboardDividerStyle = {
 
 const centeredBodyStyle = {
   ...bodyStyle,
-  fontSize: "17px",
+  fontSize: "18px",
+  fontWeight: "500",
   margin: "0",
   textAlign: "center" as const,
 };
@@ -173,9 +242,18 @@ const leaderboardSectionStyle = {
   margin: "0 0 24px",
 };
 
+const weeklyLeaderStyle = {
+  color: "#71717a",
+  fontSize: "13px",
+  fontWeight: "600",
+  lineHeight: "1.4",
+  margin: "12px 0 0",
+  textAlign: "center" as const,
+};
+
 const leaderboardTitleStyle = {
   color: "#18181b",
-  fontSize: "18px",
+  fontSize: "15px",
   fontWeight: "600",
   lineHeight: "1.3",
   margin: "0 0 4px",
@@ -183,8 +261,8 @@ const leaderboardTitleStyle = {
 };
 
 const leaderboardDescriptionStyle = {
-  color: "#71717a",
-  fontSize: "13px",
+  color: "#a1a1aa",
+  fontSize: "12px",
   lineHeight: "1.4",
   margin: "0 0 16px",
   textAlign: "center" as const,

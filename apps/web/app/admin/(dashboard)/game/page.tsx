@@ -1,8 +1,8 @@
 import { GamesManager } from "@/components/games-manager";
-import { listRegisteredMinigamesWithStatus } from "@countdown/minigame";
+import { listRegisteredGamesWithStatus } from "@countdown/game";
 
 export default function AdminGamesPage() {
-  const games = listRegisteredMinigamesWithStatus();
+  const games = listRegisteredGamesWithStatus();
 
   return <GamesManager games={games} />;
 }

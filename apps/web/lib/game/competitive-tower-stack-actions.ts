@@ -4,19 +4,21 @@ import {
   TOWER_STACK_ID,
   type TowerStackResultPayload,
   type TowerStackSubmitResult,
-} from "@countdown/minigame";
+} from "@countdown/game";
 
 import { getSession } from "@/lib/auth";
 
 import {
-  getTodaysMinigameScore,
-  saveMinigamePoints,
-} from "./daily-minigame";
-import { getOrCreateTodaysDailyMinigame } from "./daily-minigame-round";
+  getCurrentSeason,
+  getTodaysGameScore,
+  saveGamePoints,
+} from "./daily-game";
+import { getOrCreateTodaysDailyGame } from "./daily-game-round";
+import { isScoringOpen } from "./festival-season";
 
 const requirePlayableSession = async (): Promise<{
   userId: string;
-  dailyMinigameId: string;
+  dailyGameId: string;
 }> => {
   const session = await getSession();
 
@@ -24,21 +26,30 @@ const requirePlayableSession = async (): Promise<{
     throw new Error("Du skal være logget ind for at spille.");
   }
 
-  const todaysScore = await getTodaysMinigameScore(session.userId);
+  const now = new Date();
+  const { state } = await getCurrentSeason(now);
 
-  if (todaysScore) {
-    throw new Error("Du har allerede spillet dagens minigame.");
+  if (!isScoringOpen(state, now)) {
+    throw new Error(
+      "Sæsonen er på pause under festivalen — der er ingen game i dag.",
+    );
   }
 
-  const todaysRound = await getOrCreateTodaysDailyMinigame();
+  const todaysScore = await getTodaysGameScore(session.userId);
+
+  if (todaysScore) {
+    throw new Error("Du har allerede spillet dagens game.");
+  }
+
+  const todaysRound = await getOrCreateTodaysDailyGame();
 
   if (todaysRound.gameId !== TOWER_STACK_ID) {
-    throw new Error("Dagens minigame er et andet spil.");
+    throw new Error("Dagens game er et andet spil.");
   }
 
   return {
     userId: session.userId,
-    dailyMinigameId: todaysRound.copenhagenDateKey,
+    dailyGameId: todaysRound.copenhagenDateKey,
   };
 };
 
@@ -50,9 +61,9 @@ const requirePlayableSession = async (): Promise<{
 export const submitCompetitiveTowerStackResult = async (
   payload: TowerStackResultPayload,
 ): Promise<TowerStackSubmitResult> => {
-  const { userId, dailyMinigameId } = await requirePlayableSession();
+  const { userId, dailyGameId } = await requirePlayableSession();
 
-  await saveMinigamePoints(userId, dailyMinigameId, payload.score);
+  await saveGamePoints(userId, dailyGameId, payload.score);
 
   return { success: true };
 };

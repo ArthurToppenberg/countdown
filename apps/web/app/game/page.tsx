@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 
-import { getMinigame, MinigamePlayer } from "@countdown/minigame";
+import { getGame, GamePlayer } from "@countdown/game";
 
 import { getSession } from "@/lib/auth";
-import { getCompetitiveMinigameActions } from "@/lib/minigame/competitive-minigame-actions";
-import { getTodaysMinigameScore } from "@/lib/minigame/daily-minigame";
-import { getOrCreateTodaysDailyMinigame } from "@/lib/minigame/daily-minigame-round";
+import { getCompetitiveGameActions } from "@/lib/game/competitive-game-actions";
+import { getTodaysGameScore } from "@/lib/game/daily-game";
+import { getOrCreateTodaysDailyGame } from "@/lib/game/daily-game-round";
 
 export default async function DailyGamePage() {
   const session = await getSession();
@@ -14,20 +14,20 @@ export default async function DailyGamePage() {
     redirect("/login?next=/game");
   }
 
-  const todaysScore = await getTodaysMinigameScore(session.userId);
+  const todaysScore = await getTodaysGameScore(session.userId);
 
   if (todaysScore) {
     redirect("/");
   }
 
-  const todaysRound = await getOrCreateTodaysDailyMinigame();
-  const game = getMinigame(todaysRound.gameId);
+  const todaysRound = await getOrCreateTodaysDailyGame();
+  const game = getGame(todaysRound.gameId);
 
   if (!game) {
     redirect("/game/unavailable");
   }
 
-  const actions = getCompetitiveMinigameActions(game.id);
+  const actions = getCompetitiveGameActions(game.id);
 
   if (!actions) {
     notFound();
@@ -37,7 +37,7 @@ export default async function DailyGamePage() {
 
   return (
     <div className="h-dvh overflow-hidden overscroll-none">
-      <MinigamePlayer
+      <GamePlayer
         actions={actions}
         gameId={game.id}
         initialState={initialState}

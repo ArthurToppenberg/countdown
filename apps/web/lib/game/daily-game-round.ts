@@ -1,26 +1,26 @@
-import { minigameIds } from "@countdown/minigame";
+import { gameIds } from "@countdown/game";
 
 import prisma from "@/lib/prisma";
 
 import { getCopenhagenDateKey } from "./copenhagen-date";
 import { pickGameForDate } from "./pick-daily-game";
 
-export type DailyMinigameRound = {
+export type DailyGameRound = {
   copenhagenDateKey: string;
   gameId: string;
 };
 
-const toDailyMinigameRound = (round: {
+const toDailyGameRound = (round: {
   copenhagenDateKey: string;
   gameId: string;
-}): DailyMinigameRound => ({
+}): DailyGameRound => ({
   copenhagenDateKey: round.copenhagenDateKey,
   gameId: round.gameId,
 });
 
-export const getTodaysDailyMinigame = async (): Promise<DailyMinigameRound | null> => {
+export const getTodaysDailyGame = async (): Promise<DailyGameRound | null> => {
   const copenhagenDateKey = getCopenhagenDateKey(new Date());
-  const round = await prisma.dailyMinigame.findUnique({
+  const round = await prisma.dailyGame.findUnique({
     where: { copenhagenDateKey },
     select: {
       copenhagenDateKey: true,
@@ -32,12 +32,12 @@ export const getTodaysDailyMinigame = async (): Promise<DailyMinigameRound | nul
     return null;
   }
 
-  return toDailyMinigameRound(round);
+  return toDailyGameRound(round);
 };
 
-export const getOrCreateTodaysDailyMinigame = async (): Promise<DailyMinigameRound> => {
+export const getOrCreateTodaysDailyGame = async (): Promise<DailyGameRound> => {
   const copenhagenDateKey = getCopenhagenDateKey(new Date());
-  const existingRound = await prisma.dailyMinigame.findUnique({
+  const existingRound = await prisma.dailyGame.findUnique({
     where: { copenhagenDateKey },
     select: {
       copenhagenDateKey: true,
@@ -46,13 +46,13 @@ export const getOrCreateTodaysDailyMinigame = async (): Promise<DailyMinigameRou
   });
 
   if (existingRound) {
-    return toDailyMinigameRound(existingRound);
+    return toDailyGameRound(existingRound);
   }
 
-  const gameId = pickGameForDate(copenhagenDateKey, minigameIds());
+  const gameId = pickGameForDate(copenhagenDateKey, gameIds());
 
   try {
-    const createdRound = await prisma.dailyMinigame.create({
+    const createdRound = await prisma.dailyGame.create({
       data: {
         copenhagenDateKey,
         gameId,
@@ -63,9 +63,9 @@ export const getOrCreateTodaysDailyMinigame = async (): Promise<DailyMinigameRou
       },
     });
 
-    return toDailyMinigameRound(createdRound);
+    return toDailyGameRound(createdRound);
   } catch {
-    const racedRound = await prisma.dailyMinigame.findUnique({
+    const racedRound = await prisma.dailyGame.findUnique({
       where: { copenhagenDateKey },
       select: {
         copenhagenDateKey: true,
@@ -74,9 +74,9 @@ export const getOrCreateTodaysDailyMinigame = async (): Promise<DailyMinigameRou
     });
 
     if (!racedRound) {
-      throw new Error(`Failed to resolve daily minigame for ${copenhagenDateKey}`);
+      throw new Error(`Failed to resolve daily game for ${copenhagenDateKey}`);
     }
 
-    return toDailyMinigameRound(racedRound);
+    return toDailyGameRound(racedRound);
   }
 };

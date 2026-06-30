@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import type { MinigamePlayMode } from "../../types";
+import type { GamePlayMode } from "../../types";
 import { TOWER_STACK_COPY } from "./copy";
 import { getStackBlockCenterY } from "./logic";
 import { useTowerStackEngine } from "./use-tower-stack-engine";
@@ -23,7 +23,7 @@ import {
 type TowerStackGameProps = {
   initialState: TowerStackPublicState;
   variant?: "standalone" | "embedded";
-  mode?: MinigamePlayMode;
+  mode?: GamePlayMode;
   actions?: TowerStackActions;
 };
 

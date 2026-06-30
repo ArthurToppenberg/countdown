@@ -13,9 +13,9 @@ export default function GameUnavailablePage() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 py-16">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Ingen minigames lige nu</CardTitle>
+          <CardTitle>Ingen games lige nu</CardTitle>
           <CardDescription>
-            Der er ingen aktive minigames i øjeblikket. Kom tilbage senere – vi
+            Der er ingen aktive games i øjeblikket. Kom tilbage senere – vi
             skruer op for sjoven snart.
           </CardDescription>
         </CardHeader>

@@ -7,13 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "jest",
     "check-types": "tsc --noEmit",
     "clean": "rimraf .next"
   },
   "dependencies": {
     "@countdown/db": "workspace:*",
     "@countdown/email": "workspace:*",
-    "@countdown/minigame": "workspace:*",
+    "@countdown/game": "workspace:*",
     "@countdown/ui": "workspace:*",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
@@ -23,15 +24,19 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@jest/globals": "^30.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^3.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jest": "^30.4.2",
     "shadcn": "^4.11.0",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.11",
     "typescript": "^5"
   }
 }

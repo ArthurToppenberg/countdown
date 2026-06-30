@@ -20,8 +20,8 @@ type DagligEmailProps = {
 
 export const getDagligEmailBody = (name: string | null): string =>
   name
-    ? `Nååår ${name} er du klar til et minigame.`
-    : "Nååår, er du klar til et minigame.";
+    ? `Nååår ${name} er du klar til et game.`
+    : "Nååår, er du klar til et game.";
 
 // ❌ Komponenten "redder" manglende data
 {props.name ? (
@@ -93,7 +93,7 @@ React-komponenter og React Email-skabeloner antager gyldige props. Ingen `if (!n
 // ✅ Én vej — props er garanteret gyldige
 export const DagligEmail = ({ name, eventName, daysRemainingLabel }: DagligEmailProps) => (
   <Text>
-    Nååår <span>{name}</span> er du klar til et minigame.
+    Nååår <span>{name}</span> er du klar til et game.
   </Text>
 );
 ```

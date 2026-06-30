@@ -7,11 +7,19 @@ import {
   type DagligEmailEventProps,
 } from "@countdown/email";
 
-import { minigameIds } from "@countdown/minigame";
+import { gameIds } from "@countdown/game";
 
 import { logger } from "@/lib/logger";
-import { getMinigamePointsLeaderboard } from "@/lib/minigame/daily-minigame";
-import { getNextEvent } from "@/lib/next-event";
+import {
+  getCurrentSeason,
+  getSeasonLeaguePoints,
+  getWeekLeaguePoints,
+} from "@/lib/game/daily-game";
+import {
+  getSeasonCountdown,
+  getSeasonWindow,
+  isScoringOpen,
+} from "@/lib/game/festival-season";
 import prisma from "@/lib/prisma";
 
 export type DagligEmailInput = {
@@ -83,23 +91,31 @@ const sendDagligEmailToUsers = async (where: {
 export const buildDagligEmailProps = async (): Promise<
   DagligEmailEventProps | undefined
 > => {
-  const [nextEvent, leaderboardEntries] = await Promise.all([
-    getNextEvent(),
-    getMinigamePointsLeaderboard(3),
-  ]);
+  const now = new Date();
+  const { state } = await getCurrentSeason(now);
+  const countdown = getSeasonCountdown(state, now);
 
-  if (!nextEvent) {
+  if (!countdown || !state.season) {
     return undefined;
   }
 
+  const [leaderboardEntries, weeklyLeaders] = await Promise.all([
+    getSeasonLeaguePoints(getSeasonWindow(state.season), 3),
+    getWeekLeaguePoints(now, 1),
+  ]);
+
   return {
-    eventName: nextEvent.name,
-    daysRemainingLabel: nextEvent.daysRemainingLabel,
+    eventName: countdown.eventName,
+    daysRemainingLabel: countdown.daysRemainingLabel,
+    countdownNote: countdown.countdownNote,
+    seasonName: countdown.seasonName,
     leaderboard: leaderboardEntries.map((entry) => ({
       name: entry.name,
       points: entry.points,
     })),
-    hasActiveMinigame: minigameIds().length > 0,
+    weeklyLeaderName: weeklyLeaders[0]?.name ?? null,
+    hasActiveGame:
+      gameIds().length > 0 && isScoringOpen(state, now),
   };
 };
 

@@ -1,115 +1,28 @@
 import Link from "next/link";
 
+import { FestivalCalendar } from "@/components/festival-calendar";
 import { LogoutButton } from "@/components/logout-button";
 import { getSession } from "@/lib/auth";
 import {
-  type EventStatus,
-  getEventCountdown,
-} from "@/lib/event-countdown";
+  getGamePointsLeaderboard,
+  getTodaysGameScore,
+} from "@/lib/game/daily-game";
+import { getOrCreateTodaysDailyGame } from "@/lib/game/daily-game-round";
 import {
-  getMinigamePointsLeaderboard,
-  getTodaysMinigameScore,
-} from "@/lib/minigame/daily-minigame";
-import { getOrCreateTodaysDailyMinigame } from "@/lib/minigame/daily-minigame-round";
+  getSeasonCountdown,
+  getSeasonForDate,
+  isScoringOpen,
+  resolveSeasons,
+} from "@/lib/game/festival-season";
 import prisma from "@/lib/prisma";
-import { getMinigame } from "@countdown/minigame";
-import { Badge } from "@countdown/ui/components/badge";
+import { getGame } from "@countdown/game";
 import { Button } from "@countdown/ui/components/button";
 import {
   Card,
-  CardAction,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@countdown/ui/components/card";
-
-type FestivalEvent = {
-  id: string;
-  name: string;
-  description: string | null;
-  startDate: Date;
-  endDate: Date;
-};
-
-const shortMonthFormatter = new Intl.DateTimeFormat("da-DK", {
-  month: "short",
-});
-
-const dayFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-});
-
-const dayMonthFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-  month: "short",
-});
-
-const fullDateFormatter = new Intl.DateTimeFormat("da-DK", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-const monthYearFormatter = new Intl.DateTimeFormat("da-DK", {
-  month: "long",
-  year: "numeric",
-});
-
-const getMonthKey = (date: Date): string =>
-  `${date.getFullYear()}-${date.getMonth()}`;
-
-const formatDateRange = (startDate: Date, endDate: Date): string => {
-  const sameMonth =
-    startDate.getMonth() === endDate.getMonth() &&
-    startDate.getFullYear() === endDate.getFullYear();
-  const sameYear = startDate.getFullYear() === endDate.getFullYear();
-
-  if (sameMonth) {
-    return `${dayFormatter.format(startDate)}.–${dayFormatter.format(endDate)}. ${shortMonthFormatter.format(startDate)} ${startDate.getFullYear()}`;
-  }
-
-  if (sameYear) {
-    return `${dayMonthFormatter.format(startDate)} – ${dayMonthFormatter.format(endDate)} ${startDate.getFullYear()}`;
-  }
-
-  return `${fullDateFormatter.format(startDate)} – ${fullDateFormatter.format(endDate)}`;
-};
-
-const statusVariant = (status: EventStatus): "default" | "secondary" | "outline" => {
-  if (status === "live") {
-    return "default";
-  }
-
-  if (status === "upcoming") {
-    return "secondary";
-  }
-
-  return "outline";
-};
-
-const statusDotClassName = (status: EventStatus): string => {
-  if (status === "live") {
-    return "bg-primary ring-4 ring-primary/20";
-  }
-
-  if (status === "upcoming") {
-    return "bg-foreground/80 ring-4 ring-background";
-  }
-
-  return "bg-muted-foreground/50 ring-4 ring-background";
-};
-
-const statusCardClassName = (status: EventStatus): string => {
-  if (status === "live") {
-    return "ring-primary/30";
-  }
-
-  if (status === "past") {
-    return "opacity-60";
-  }
-
-  return "";
-};
 
 export default async function Home() {
   const session = await getSession();
@@ -122,19 +35,25 @@ export default async function Home() {
         },
       })
       .catch(() => undefined),
-    getMinigamePointsLeaderboard(10).catch(() => undefined),
+    getGamePointsLeaderboard(10).catch(() => undefined),
     session
-      ? getTodaysMinigameScore(session.userId).catch(() => undefined)
+      ? getTodaysGameScore(session.userId).catch(() => undefined)
       : Promise.resolve(null),
   ]);
+  const seasonState = events
+    ? getSeasonForDate(resolveSeasons(events), now)
+    : null;
+  const seasonCountdown =
+    seasonState?.inFestival ? getSeasonCountdown(seasonState, now) : null;
+  const scoringOpen = seasonState === null ? true : isScoringOpen(seasonState, now);
   const hasPlayedTodaysGame = Boolean(todaysScore);
-  const canPlayOfficialMinigame = !hasPlayedTodaysGame;
+  const canPlayOfficialGame = !hasPlayedTodaysGame && scoringOpen;
   const todaysRound =
-    canPlayOfficialMinigame && session
-      ? await getOrCreateTodaysDailyMinigame().catch(() => undefined)
+    canPlayOfficialGame && session
+      ? await getOrCreateTodaysDailyGame().catch(() => undefined)
       : undefined;
   const todaysGame = todaysRound
-    ? getMinigame(todaysRound.gameId)
+    ? getGame(todaysRound.gameId)
     : undefined;
 
   return (
@@ -174,28 +93,59 @@ export default async function Home() {
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">
             {session?.name ? `Hej ${session.name} -  ` : ""}
-            Tidslinje 2026
+            Kalender 2026
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
             Fra Distortion Ø til Karrusel.
           </p>
         </div>
 
-        {session && canPlayOfficialMinigame && todaysGame ? (
+        {session && canPlayOfficialGame && todaysGame ? (
           <div className="mb-8">
             <Link href="/game">
               <Button className="w-full">
-                {`Spil dagens minigame: ${todaysGame.title}`}
+                {`Spil dagens game: ${todaysGame.title}`}
               </Button>
             </Link>
           </div>
+        ) : session && !hasPlayedTodaysGame && !scoringOpen ? (
+          <Card className="mb-8">
+            <CardHeader>
+              {seasonCountdown ? (
+                <CardTitle className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-4xl leading-none font-bold tabular-nums">
+                    {seasonCountdown.daysRemainingLabel}
+                  </span>
+                  <span className="text-base font-medium">
+                    {seasonCountdown.seasonName ? (
+                      <>
+                        til{" "}
+                        <span className="text-amber-500">
+                          {seasonCountdown.seasonName}
+                        </span>
+                      </>
+                    ) : (
+                      seasonCountdown.countdownNote
+                    )}
+                  </span>
+                </CardTitle>
+              ) : (
+                <>
+                  <CardTitle>Sæsonen er på pause</CardTitle>
+                  <CardDescription>
+                    Der er ingen aktiv sæson lige nu, så dagens game holder pause.
+                  </CardDescription>
+                </>
+              )}
+            </CardHeader>
+          </Card>
         ) : null}
 
         {leaderboard && leaderboard.length > 0 ? (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>Pointtavle</CardTitle>
-              <CardDescription>Spillere med flest point i alt</CardDescription>
+              <CardDescription>Point efter daglig placering</CardDescription>
             </CardHeader>
             <ol className="flex flex-col gap-2 px-6 pb-6">
               {leaderboard.map((entry, index) => (
@@ -242,72 +192,7 @@ export default async function Home() {
             </CardHeader>
           </Card>
         ) : (
-          <div className="relative">
-            <div
-              className="absolute top-2 bottom-2 left-[0.6875rem] w-px bg-border"
-              aria-hidden
-            />
-
-            <ol className="flex flex-col gap-10">
-              {events.map((event, index) => {
-                const previousEvent = index > 0 ? events[index - 1] : undefined;
-                const showMonthHeader =
-                  !previousEvent ||
-                  getMonthKey(previousEvent.startDate) !== getMonthKey(event.startDate);
-
-                const countdown = getEventCountdown(event.startDate, event.endDate, now);
-
-                return (
-                  <li key={event.id} className="flex flex-col gap-6">
-                    {showMonthHeader ? (
-                      <div className="relative grid grid-cols-[1.375rem_1fr] items-center gap-x-5">
-                        <div className="flex justify-center">
-                          <span className="z-10 size-2 rounded-full bg-border" aria-hidden />
-                        </div>
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                          {monthYearFormatter.format(event.startDate)}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    <div className="relative grid grid-cols-[1.375rem_1fr] gap-x-5">
-                      <div className="flex justify-center pt-5">
-                        <span
-                          className={`z-10 size-2.5 shrink-0 rounded-full ${statusDotClassName(countdown.status)}`}
-                          aria-hidden
-                        />
-                      </div>
-
-                      <div className="relative min-w-0">
-                        <div
-                          className="absolute top-[1.375rem] -left-5 h-px w-5 bg-border"
-                          aria-hidden
-                        />
-                        <Card className={statusCardClassName(countdown.status)}>
-                          <CardHeader>
-                            <CardTitle>{event.name}</CardTitle>
-                            <CardDescription className="mt-1">
-                              <time dateTime={event.startDate.toISOString()}>
-                                {formatDateRange(event.startDate, event.endDate)}
-                              </time>
-                              {event.description ? (
-                                <span className="mt-1.5 block">{event.description}</span>
-                              ) : null}
-                            </CardDescription>
-                            <CardAction>
-                              <Badge variant={statusVariant(countdown.status)}>
-                                {countdown.label}
-                              </Badge>
-                            </CardAction>
-                          </CardHeader>
-                        </Card>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
+          <FestivalCalendar events={events} today={now} />
         )}
       </main>
     </>

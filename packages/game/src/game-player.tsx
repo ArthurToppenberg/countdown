@@ -3,23 +3,23 @@
 import { TowerStackGame } from "./games/tower-stack/tower-stack-game";
 import { TOWER_STACK_ID } from "./games/tower-stack/tower-stack-metadata";
 import type { TowerStackActions } from "./games/tower-stack/types";
-import type { MinigamePlayMode } from "./types";
+import type { GamePlayMode } from "./types";
 
-type MinigamePlayerProps = {
+type GamePlayerProps = {
   gameId: string;
   initialState: unknown;
   variant?: "standalone" | "embedded";
-  mode?: MinigamePlayMode;
+  mode?: GamePlayMode;
   actions?: TowerStackActions;
 };
 
-export const MinigamePlayer = ({
+export const GamePlayer = ({
   gameId,
   initialState,
   variant = "standalone",
   mode = "practice",
   actions,
-}: MinigamePlayerProps) => {
+}: GamePlayerProps) => {
   if (gameId === TOWER_STACK_ID) {
     return (
       <TowerStackGame

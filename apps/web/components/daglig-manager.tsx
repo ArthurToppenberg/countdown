@@ -118,32 +118,6 @@ export const DagligManager = ({
       </div>
 
       <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-medium">E-mail preview</h2>
-          <p className="text-sm text-muted-foreground">
-            Emne og indhold vises med dit navn som eksempel.
-          </p>
-        </div>
-
-        {previewHtml && subject ? (
-          <div className="overflow-hidden rounded-xl border bg-card ring-1 ring-foreground/10">
-            <div className="border-b bg-muted/40 px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Emne
-              </p>
-              <p className="mt-1 text-sm font-medium">{subject}</p>
-            </div>
-
-            <DagligEmailPreviewFrame previewHtml={previewHtml} />
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Ingen kommende begivenhed at sende mail for.
-          </p>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
             <h2 className="text-sm font-medium">Brugere</h2>
@@ -244,6 +218,32 @@ export const DagligManager = ({
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-sm font-medium">E-mail preview</h2>
+          <p className="text-sm text-muted-foreground">
+            Emne og indhold vises med dit navn som eksempel.
+          </p>
+        </div>
+
+        {previewHtml && subject ? (
+          <div className="overflow-hidden rounded-xl border bg-card ring-1 ring-foreground/10">
+            <div className="border-b bg-muted/40 px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Emne
+              </p>
+              <p className="mt-1 text-sm font-medium">{subject}</p>
+            </div>
+
+            <DagligEmailPreviewFrame previewHtml={previewHtml} />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Ingen kommende begivenhed at sende mail for.
+          </p>
         )}
       </section>
     </div>

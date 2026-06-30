@@ -49,7 +49,7 @@ export const assertManifestCoversRegisteredGames = (
   }
 };
 
-export const isMinigameActive = (gameId: string): boolean => {
+export const isGameActive = (gameId: string): boolean => {
   const entry = parsedManifest.games[gameId];
 
   if (!entry) {
@@ -59,7 +59,7 @@ export const isMinigameActive = (gameId: string): boolean => {
   return entry.active;
 };
 
-export const listActiveMinigameIds = (
+export const listActiveGameIds = (
   registeredGameIds: readonly string[],
 ): string[] =>
-  registeredGameIds.filter((gameId) => isMinigameActive(gameId));
+  registeredGameIds.filter((gameId) => isGameActive(gameId));

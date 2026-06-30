@@ -1,6 +1,6 @@
-# @countdown/minigame
+# @countdown/game
 
-Shared minigame definitions, server-side game logic, and React UI for Countdown.
+Shared game definitions, server-side game logic, and React UI for Countdown.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ Shared minigame definitions, server-side game logic, and React UI for Countdown.
 
 Play is client-driven for a smooth experience, but the result is meant to be **server-verifiable**. The `replay` is a deterministic input log (per attempt: each block's locked x-position and the millisecond it was locked). Because the server has the same pure `logic.ts`, it can re-simulate the inputs and recompute the authoritative score, then reject mismatches.
 
-> Current status: server-side replay verification is **not yet implemented** — the submit action trusts the client `score` (see the `TODO` in `apps/web/lib/minigame/competitive-tower-stack-actions.ts`). Competitive double-submits are still blocked by the unique `(dailyMinigameId, userId)` constraint.
+> Current status: server-side replay verification is **not yet implemented** — the submit action trusts the client `score` (see the `TODO` in `apps/web/lib/game/competitive-tower-stack-actions.ts`). Competitive double-submits are still blocked by the unique `(dailyGameId, userId)` constraint.
 
 ## Usage
 
@@ -20,7 +20,7 @@ Play is client-driven for a smooth experience, but the result is meant to be **s
 import {
   TowerStackGame,
   getTowerStackState,
-} from "@countdown/minigame/games/tower-stack";
+} from "@countdown/game/games/tower-stack";
 
 const initialState = await getTowerStackState();
 
@@ -37,9 +37,9 @@ Each game is playable at `/game/[game-id]` (for example `/game/tower-stack`). Re
 
 Every game registered in `src/registry.ts` must have a matching entry in `games.manifest.json`. The app fails fast at startup if the manifest and registry are out of sync.
 
-## Daily minigame selection
+## Daily game selection
 
-Each Copenhagen calendar day, one active game is picked deterministically and stored in the `DailyMinigame` database table. All players get the same game that day. Selection uses `minigameIds()` (active games only) and a salted date hash (`DAILY_MINIGAME_SALT` or `JWT_SECRET` in the web app).
+Each Copenhagen calendar day, one active game is picked deterministically and stored in the `DailyGame` database table. All players get the same game that day. Selection uses `gameIds()` (active games only) and a salted date hash (`DAILY_GAME_SALT` or `JWT_SECRET` in the web app).
 
 ## Adding a new game
 
@@ -50,4 +50,4 @@ Quick version:
 1. Create `src/games/your-game/` following `tower-stack/` (pure `logic.ts`, a client engine hook, the game component, `actions.ts` for the initial state)
 2. Register the game in `src/registry.ts`
 3. Add an entry to `games.manifest.json` (use `"active": false` until the game is ready)
-4. Wire up `minigame-player.tsx`, exports, and competitive wrappers in `apps/web/lib/minigame/`
+4. Wire up `game-player.tsx`, exports, and competitive wrappers in `apps/web/lib/game/`

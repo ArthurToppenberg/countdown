@@ -3,8 +3,9 @@ import {
   sendDagligEmailToAdminUsers,
   type DagligEmailBatchResult,
 } from "@/lib/email/daglig-email";
+import { sendChampionEmailsForNewlyCrowned } from "@/lib/email/champion-email";
 import { cronJsonResponse } from "@/lib/cron/cron-response";
-import { getCopenhagenMinutesSinceMidnight } from "@/lib/minigame/copenhagen-date";
+import { getCopenhagenMinutesSinceMidnight } from "@/lib/game/copenhagen-date";
 import { logger } from "@/lib/logger";
 
 const SCHEDULED_COPENHAGEN_HOUR = 6;
@@ -77,7 +78,27 @@ export const runScheduledDagligCron = async (): Promise<
     );
   }
 
+  await crownNewlyLockedSeason();
+
   return runDagligEmailSend("all");
+};
+
+const crownNewlyLockedSeason = async (): Promise<void> => {
+  try {
+    const result = await sendChampionEmailsForNewlyCrowned();
+
+    if (result.festivalName) {
+      logger.info("Daglig", "Crowning email batch finished", {
+        festivalName: result.festivalName,
+        sent: result.sent,
+        failed: result.failed.length,
+      });
+    }
+  } catch (error) {
+    logger.error("Daglig", "Crowning email batch failed", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+  }
 };
 
 export const runDagligEmailToAllUsersCron = async (): Promise<

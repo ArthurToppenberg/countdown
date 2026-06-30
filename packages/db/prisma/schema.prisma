@@ -23,7 +23,7 @@ model User {
   dagligEmailOptIn       Boolean    @default(true)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
-  minigames              Minigame[]
+  games                  Game[]
 }
 
 model Event {
@@ -36,22 +36,25 @@ model Event {
   updatedAt   DateTime @updatedAt
 }
 
-model Minigame {
-  id              String        @id @default(cuid())
-  dailyMinigameId String
-  dailyMinigame   DailyMinigame @relation(fields: [dailyMinigameId], references: [copenhagenDateKey], onDelete: Cascade)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  points          Int
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model Game {
+  id          String    @id @default(cuid())
+  dailyGameId String    @map("dailyMinigameId")
+  dailyGame   DailyGame @relation(fields: [dailyGameId], references: [copenhagenDateKey], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  points      Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  @@unique([dailyMinigameId, userId])
+  @@unique([dailyGameId, userId])
+  @@map("Minigame")
 }
 
-model DailyMinigame {
-  copenhagenDateKey String     @id
+model DailyGame {
+  copenhagenDateKey String   @id
   gameId            String
-  createdAt         DateTime   @default(now())
-  scores            Minigame[]
+  createdAt         DateTime @default(now())
+  scores            Game[]
+
+  @@map("DailyMinigame")
 }

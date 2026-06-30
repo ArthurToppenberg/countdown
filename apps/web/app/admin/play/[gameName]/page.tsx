@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
+import { getRegisteredGame, GamePlayer } from "@countdown/game";
 
 import { getSession } from "@/lib/auth";
 
@@ -18,7 +18,7 @@ export default async function AdminPlayPage({ params }: AdminPlayPageProps) {
   }
 
   const { gameName } = await params;
-  const game = getRegisteredMinigame(gameName);
+  const game = getRegisteredGame(gameName);
 
   if (!game) {
     redirect("/admin/game");
@@ -28,7 +28,7 @@ export default async function AdminPlayPage({ params }: AdminPlayPageProps) {
 
   return (
     <div className="h-dvh overflow-hidden overscroll-none">
-      <MinigamePlayer
+      <GamePlayer
         gameId={game.id}
         initialState={initialState}
         mode="practice"

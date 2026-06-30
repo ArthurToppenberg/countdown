@@ -1,10 +1,10 @@
 {
-  "name": "@countdown/minigame",
+  "name": "@countdown/game",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./minigame.css": "./src/minigame.css",
+    "./game.css": "./src/game.css",
     "./games/tower-stack": "./src/games/tower-stack/index.ts"
   },
   "scripts": {

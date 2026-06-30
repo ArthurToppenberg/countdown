@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ExternalLinkIcon } from "lucide-react";
 
-import { type MinigameManifestStatus } from "@countdown/minigame";
+import { type GameManifestStatus } from "@countdown/game";
 import { Badge } from "@countdown/ui/components/badge";
 import { Button } from "@countdown/ui/components/button";
 
 type GamesManagerProps = {
-  games: MinigameManifestStatus[];
+  games: GameManifestStatus[];
 };
 
 const getAdminPlayPath = (gameId: string): string => `/admin/play/${gameId}`;
@@ -16,7 +16,7 @@ export const GamesManager = ({ games }: GamesManagerProps) => (
     <div className="flex flex-col gap-2">
       <h1 className="text-2xl font-semibold tracking-tight">Games</h1>
       <p className="text-sm text-muted-foreground">
-        Oversigt over registrerede minigames og deres status i manifestet.
+        Oversigt over registrerede games og deres status i manifestet.
       </p>
     </div>
 
