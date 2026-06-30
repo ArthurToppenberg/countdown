@@ -4,10 +4,12 @@ import {
   type DagligEmailBatchResult,
 } from "@/lib/email/daglig-email";
 import { cronJsonResponse } from "@/lib/cron/cron-response";
-import { getCopenhagenHour } from "@/lib/minigame/copenhagen-date";
+import { getCopenhagenMinutesSinceMidnight } from "@/lib/minigame/copenhagen-date";
 import { logger } from "@/lib/logger";
 
 const SCHEDULED_COPENHAGEN_HOUR = 6;
+const SCHEDULED_COPENHAGEN_MINUTES = SCHEDULED_COPENHAGEN_HOUR * 60;
+const MAX_LATENESS_MINUTES = 3 * 60;
 
 type DagligCronAudience = "all" | "admin";
 
@@ -52,9 +54,27 @@ const runDagligEmailSend = async (
 export const runScheduledDagligCron = async (): Promise<
   ReturnType<typeof cronJsonResponse>
 > => {
-  if (getCopenhagenHour(new Date()) !== SCHEDULED_COPENHAGEN_HOUR) {
-    logger.info("Daglig", "Skipping cron send — not 6 AM Copenhagen time");
+  const latenessMinutes =
+    getCopenhagenMinutesSinceMidnight(new Date()) - SCHEDULED_COPENHAGEN_MINUTES;
+
+  if (latenessMinutes < 0) {
+    logger.info("Daglig", "Skipping cron send — before 6 AM Copenhagen time", {
+      latenessMinutes,
+    });
     return cronJsonResponse({ sent: false, reason: "outside-window" });
+  }
+
+  if (latenessMinutes > MAX_LATENESS_MINUTES) {
+    logger.error("Daglig", "Rejecting cron send — more than 3 hours late", {
+      latenessMinutes,
+      maxLatenessMinutes: MAX_LATENESS_MINUTES,
+    });
+    return cronJsonResponse(
+      {
+        error: `Daglig e-mail afvist: ${latenessMinutes} minutter forsinket (maks. ${MAX_LATENESS_MINUTES}).`,
+      },
+      { status: 500 },
+    );
   }
 
   return runDagligEmailSend("all");

@@ -26,3 +26,21 @@ export const getCopenhagenHour = (date: Date): number => {
 
   return Number(hourPart.value);
 };
+
+export const getCopenhagenMinutesSinceMidnight = (date: Date): number => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: COPENHAGEN_TIME_ZONE,
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const hourPart = parts.find((part) => part.type === "hour");
+  const minutePart = parts.find((part) => part.type === "minute");
+
+  if (!hourPart || !minutePart) {
+    throw new Error("Could not resolve Copenhagen time");
+  }
+
+  return Number(hourPart.value) * 60 + Number(minutePart.value);
+};
