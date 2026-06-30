@@ -73,31 +73,19 @@ export default async function Home() {
         className="pointer-events-none fixed inset-0 -z-10 bg-background/80"
       />
       <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pt-8 pb-16">
-        <div className="mb-12">
-          <div className="mb-2 flex items-center justify-between gap-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Festivaltæller
-            </p>
-            {session ? (
-              <LogoutButton
-                email={session.email}
-                showAdminLink={session.role === "ADMIN"}
-              />
-            ) : (
-              <Link href="/login">
-                <Button size="sm" variant="outline">
-                  Log ind
-                </Button>
-              </Link>
-            )}
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {session?.name ? `Hej ${session.name} -  ` : ""}
-            Kalender 2026
-          </h1>
-          <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-            Fra Distortion Ø til Karrusel.
-          </p>
+        <div className="mb-12 flex justify-end">
+          {session ? (
+            <LogoutButton
+              email={session.email}
+              showAdminLink={session.role === "ADMIN"}
+            />
+          ) : (
+            <Link href="/login">
+              <Button size="sm" variant="outline">
+                Log ind
+              </Button>
+            </Link>
+          )}
         </div>
 
         {session && canPlayOfficialGame && todaysGame ? (
