@@ -9,7 +9,7 @@ import {
   deleteUser,
   resetUserPassword,
   updateUser,
-} from "@/app/admin/brugere/actions";
+} from "@/app/admin/(dashboard)/brugere/actions";
 import { type UserRole } from "@/lib/user-validation";
 import { Badge } from "@countdown/ui/components/badge";
 import { Button } from "@countdown/ui/components/button";

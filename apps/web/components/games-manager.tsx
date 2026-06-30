@@ -9,7 +9,7 @@ type GamesManagerProps = {
   games: MinigameManifestStatus[];
 };
 
-const getPracticeGamePath = (gameId: string): string => `/game/${gameId}`;
+const getAdminPlayPath = (gameId: string): string => `/admin/play/${gameId}`;
 
 export const GamesManager = ({ games }: GamesManagerProps) => (
   <div className="flex flex-col gap-6">
@@ -56,7 +56,7 @@ export const GamesManager = ({ games }: GamesManagerProps) => (
                     nativeButton={false}
                     render={
                       <Link
-                        href={getPracticeGamePath(game.id)}
+                        href={getAdminPlayPath(game.id)}
                         target="_blank"
                         rel="noopener noreferrer"
                       />

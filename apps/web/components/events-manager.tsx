@@ -8,7 +8,7 @@ import {
   createEvent,
   deleteEvent,
   updateEvent,
-} from "@/app/admin/events/actions";
+} from "@/app/admin/(dashboard)/events/actions";
 import { toDatetimeLocalValue } from "@/lib/event-validation";
 import { Button } from "@countdown/ui/components/button";
 import { Input } from "@countdown/ui/components/input";

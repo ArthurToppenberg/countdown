@@ -1,19 +1,27 @@
 import { redirect } from "next/navigation";
 
-import { getMinigame, MinigamePlayer } from "@countdown/minigame";
+import { getRegisteredMinigame, MinigamePlayer } from "@countdown/minigame";
 
-type GamePageProps = {
+import { getSession } from "@/lib/auth";
+
+type AdminPlayPageProps = {
   params: Promise<{
     gameName: string;
   }>;
 };
 
-export default async function GamePage({ params }: GamePageProps) {
+export default async function AdminPlayPage({ params }: AdminPlayPageProps) {
+  const session = await getSession();
+
+  if (!session || session.role !== "ADMIN") {
+    redirect("/");
+  }
+
   const { gameName } = await params;
-  const game = getMinigame(gameName);
+  const game = getRegisteredMinigame(gameName);
 
   if (!game) {
-    redirect("/game/unavailable");
+    redirect("/admin/game");
   }
 
   const initialState = await game.getInitialState();

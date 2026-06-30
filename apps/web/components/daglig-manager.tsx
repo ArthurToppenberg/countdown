@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import {
   sendDagligEmailToUser,
   setDagligEmailOptIn,
-} from "@/app/admin/daglig/actions";
+} from "@/app/admin/(dashboard)/daglig/actions";
 import { DagligEmailPreviewFrame } from "@/components/daglig-email-preview-frame";
 import { Button } from "@countdown/ui/components/button";
 import { Input } from "@countdown/ui/components/input";
